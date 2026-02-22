@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/python
 """
-TermuxBolt - AI Voice Assistant for Termux
+AndroMate - AI Voice Assistant for Termux
 Root entry point. Adds modules directory to path and dispatches commands.
 """
 
