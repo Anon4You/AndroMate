@@ -22,7 +22,6 @@
 - 💬 Conversational replies (e.g., “how are you?”)
 - 🔊 Spoken confirmations (uses `termux-tts-speak`)
 
----
 
 ## 📦 Requirements
 
@@ -43,25 +42,26 @@ After installing the Termux:API app, run each relevant command once to grant per
 ---
 
 ## 🚀 Quick Start
-
-1. **Clone the repository** (or copy the files):
+ **Clone the repository** (or copy the files):
    ```bash
-   git clone https://github.com/Anon4You/AndroMate.git
-   cd AndroMate
+git clone https://github.com/Anon4You/AndroMate.git
+cd AndroMate
+   ```
+
+1. **Set your OpenRouter API key** (free tier available):
+```bash
+echo "your-api-key-here" > ~/.openrouter_key
 ```
 
-1. Set your OpenRouter API key (free tier available):
-   ```bash
-   echo "your-api-key-here" > ~/.openrouter_key
-   ```
-2. Run a voice command:
-   ```bash
-   python andromate.py voice
-   ```
-3. Run background monitor (notifications & clipboard):
-   ```bash
-   python andromate.py
-   ```
+2. **Run a voice command:**
+```bash
+python andromate.py voice
+```
+
+4. **Run background monitor** (notifications & clipboard):
+```bash
+python andromate.py
+```
 
 ---
 
