@@ -1,132 +1,197 @@
 <p align="center">
-  <h1 align="center">AndroMate 🤖</h1>
+  <img src="https://via.placeholder.com/200x200?text=AndroMate" alt="AndroMate Logo" width="200"/>
+  
+  <h1 align="center">AndroMate</h1>
+  
   <p align="center">
-    <em>A powerful, voice-controlled AI assistant designed specifically for Termux on Android.</em>
+    <strong>A powerful, modular AI assistant for Termux on Android.</strong><br>
+    <sub>Control your device with natural voice commands, CLI, or automated background tasks.</sub>
   </p>
+
   <p align="center">
-    <a href="#features">Features</a> •
-    <a href="#prerequisites">Prerequisites</a> •
-    <a href="#installation">Installation</a> •
-    <a href="#usage">Usage</a> •
-    <a href="#license">License</a>
+    <a href="https://github.com/Anon4You/AndroMate/blob/main/LICENSE">
+      <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
+    </a>
+    <a href="https://www.python.org/">
+      <img src="https://img.shields.io/badge/Made%20with-Python-1f425f.svg" alt="Made with Python">
+    </a>
+    <a href="https://termux.com/">
+      <img src="https://img.shields.io/badge/Platform-Termux%20%7C%20Android-green.svg" alt="Platform">
+    </a>
+    <a href="https://github.com/Anon4You/AndroMate/issues">
+      <img src="https://img.shields.io/badge/Status-Beta-orange.svg" alt="Status">
+    </a>
   </p>
 </p>
 
 ---
 
-## 📝 Overview
+## 📖 Table of Contents
 
-**AndroMate** bridges the gap between natural language processing and Android system controls. By leveraging the Termux API and OpenRouter's AI capabilities, AndroMate allows users to interact with their device using natural voice commands or a CLI interface.
-
-Whether you need to send messages, toggle hardware settings, execute shell scripts, or simply chat, AndroMate acts as a unified interface for device automation.
-
-> ⚠️ **Status:** This project is in active development. It is designed exclusively for the Termux environment on Android.
-
----
-
-## ✨ Key Features
-
-### 🧠 AI & Interaction
-*   **Natural Language Processing:** Powered by OpenRouter (supports free models) to understand intent.
-*   **Voice Recognition:** Utilizes Google Speech-to-Text for hands-free command execution.
-*   **Conversational Mode:** Engages in dialogue and answers general queries.
-*   **Audible Feedback:** Provides spoken confirmations via `termux-tts-speak`.
-
-### 📱 Device Control
-*   **Communication:** Send SMS, WhatsApp, Telegram, and Email messages; make phone calls.
-*   **System Automation:** Open apps by name, execute shell commands, and manage clipboard content.
-*   **Hardware Access:** Get battery status, set screen brightness, take photos, and toggle the torch.
-*   **Media & Location:** Control media playback and fetch current GPS coordinates.
-*   **Background Monitoring:** Auto-reply to notifications and monitor clipboard changes.
+- [✨ Features](#-features)
+- [🎨 Demo](#-demo)
+- [📦 Requirements](#-requirements)
+- [🚀 Installation](#-installation)
+- [💻 Usage](#-usage)
+- [⚙️ Configuration](#️-configuration)
+- [🧩 Project Structure](#-project-structure)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
 
 ---
 
-## 📦 Prerequisites
+## ✨ Features
 
-To ensure full functionality, the following components must be installed and configured in your Termux environment.
+### 🧠 Core Intelligence
+- **Multi-Provider AI:** Seamlessly switch between **OpenRouter**, **OpenAI**, and **Pollinations** (free, no-key required).
+- **Voice Recognition:** Hands-free control via Google Speech-to-Text.
+- **Conversational Context:** Understands natural queries like "How are you?" or "Who are you?".
+- **Spoken Feedback:** Uses `termux-tts-speak` for audible confirmations.
 
-### System Dependencies
-Ensure you have the **Termux:API** app installed from F-Droid (essential for hardware access).
+### 📱 Device Control & Automation
+- **Communication:** Send SMS, WhatsApp, Telegram, and Email. Auto-resolves contact names.
+- **System Management:** Execute shell commands, control brightness, volume, WiFi, and battery monitoring.
+- **Media & Hardware:** Take photos, toggle torch, play/pause media, and fetch GPS location.
+- **Background Monitoring:**
+  - **Clipboard Watcher:** Automatically translates or summarizes copied text.
+  - **Notification Auto-Reply:** intelligently responds to incoming notifications.
 
-```bash
-pkg update && pkg upgrade
-pkg install termux-api ffmpeg flac python
-```
+### 🎨 Advanced Capabilities
+- **Image Generation:** Create AI art using `tgpt` (e.g., "Generate a cyberpunk cat").
+- **Modular Design:** Easily extend functionality by adding new action modules.
+
+---
+
+## 📦 Requirements
+
+Ensure the following dependencies are installed in your Termux environment.
+
+### System Packages
+| Package | Description | Install Command |
+| :--- | :--- | :--- |
+| **Termux:API App** | Essential bridge for hardware access | [Download from F-Droid](https://f-droid.org/packages/com.termux.api/) |
+| `termux-api` | API interface package | `pkg install termux-api` |
+| `ffmpeg` | Audio encoding/decoding | `pkg install ffmpeg` |
+| `flac` | FLAC audio codec | `pkg install flac` |
+| `termux-tts-speak` | Text-to-speech engine | `pkg install termux-tts-speak` |
+| `tgpt` | Local AI/Image generation backend | `pkg install tgpt` |
 
 ### Python Libraries
-Install the required Python packages:
-
 ```bash
 pip install requests SpeechRecognition
 ```
 
-> **Note:** After installing the Termux:API app, manually run commands like `termux-microphone-record` or `termux-sms-send` once to grant the necessary Android permissions.
+> ⚠️ **Permission Grant:** After installing the Termux:API app, run commands like `termux-microphone-record` or `termux-sms-send` once manually to grant necessary Android permissions.
 
 ---
 
 ## 🚀 Installation
 
-Follow these steps to get AndroMate up and running.
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/Anon4You/AndroMate.git
+   cd AndroMate
+   ```
 
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/Anon4You/AndroMate.git
-    cd AndroMate
-    ```
+2. **Configure API Keys (Optional)**
+   Required only for OpenRouter or OpenAI providers. Pollinations works out-of-the-box.
+   ```bash
+   echo "your-openrouter-api-key" > ~/.openrouter_key
+   ```
 
-2.  **Configure API Key**
-    AndroMate requires an OpenRouter API key for AI decision-making. You can obtain a free key from [OpenRouter](https://openrouter.ai/).
-    
-    Save your key to the configuration file:
-    ```bash
-    echo "YOUR_OPENROUTER_API_KEY" > ~/.openrouter_key
-    ```
+3. **Run the Assistant**
+   ```bash
+   python andromate.py voice
+   ```
 
 ---
 
 ## 💻 Usage
 
-AndroMate offers three distinct modes of operation:
+AndroMate offers three distinct operational modes:
 
-### 1. Voice Mode (Interactive)
-Activate the assistant to listen for a single command.
-```bash
-python andromate.py voice
-```
+| Mode | Command | Description |
+| :--- | :--- | :--- |
+| **Voice** | `python andromate.py voice` | Listens for a single voice command, executes it, and provides feedback. |
+| **CLI** | `python andromate.py cli` | Interactive shell mode for typing commands. Great for debugging. |
+| **Daemon** | `python andromate.py` | Background mode. Monitors notifications and clipboard changes. |
 
-### 2. CLI Mode (Interactive Shell)
-Type commands directly into an interactive prompt.
-```bash
-python andromate.py cli
-```
+### 🗣️ Example Commands
 
-### 3. Background Mode (Daemon)
-Runs silently to monitor notifications and clipboard activity.
-```bash
-python andromate.py
-```
+**Messaging & Calls**
+> "Send a WhatsApp message to John saying I'm on my way."
+> "Call Mom."
 
-### 📱 Widget Integration
-For quick access, you can create a Termux widget shortcut on your home screen. Refer to the [Termux:Widget](https://wiki.termux.com/wiki/Termux:Widget) documentation for setup instructions.
+**System & Utilities**
+> "What's my battery level?"
+> "Set brightness to 50%."
+> "Update system packages." (Executes `pkg update`)
+
+**AI & Media**
+> "Generate an image of a futuristic city."
+> "Switch to OpenAI provider."
+> "What providers are available?"
 
 ---
 
-## 🛠️ Development Status
+## ⚙️ Configuration
 
-AndroMate is currently in **Beta**.
+Configuration settings are stored in `~/.andromate/config.json` (auto-generated on first run) or managed via voice commands.
 
-*   **Stability:** Some features may be subject to instability depending on device Android version.
-*   **AI Accuracy:** The default free AI model may occasionally misinterpret complex commands.
-*   **Contributing:** We welcome contributions, bug reports, and feature requests. Please feel free to fork the repository and submit a pull request.
+- **Switching Providers:**
+  - Voice: *"Switch to pollinations"*
+  - Config: Edit the `provider` key in `config.json`.
+- **Rate Limiting:** Adjust `MIN_AI_CALL_INTERVAL` in `modules/config.py` to prevent API spamming.
+- **Custom App Mapping:** Add specific app aliases to `APP_NAME_TO_PACKAGE` in `modules/config.py`.
+
+---
+
+## 🧩 Project Structure
+
+The project follows a modular architecture for easy maintenance and extension.
+
+```
+AndroMate/
+├── andromate.py          # Main entry point
+└── modules/
+    ├── __init__.py
+    ├── actions.py        # Core action implementations (Call, SMS, Torch)
+    ├── ai.py             # AI decision routing logic
+    ├── cli.py            # Interactive CLI loop
+    ├── clipboard.py      # Clipboard monitoring service
+    ├── config.py         # Static constants and configuration
+    ├── contacts.py       # Fuzzy contact name matching
+    ├── error_handler.py  # Centralized error logging
+    ├── main.py           # Background daemon logic
+    ├── notifications.py  # Notification listener
+    ├── prompt_manager.py # Dynamic AI prompt generation
+    ├── providers.py      # API wrappers (OpenRouter, Pollinations, etc.)
+    ├── utils.py          # Helpers (TTS, fuzzy matching, etc.)
+    └── voice.py          # Recording & Speech-to-Text logic
+```
+
+---
+
+## 🧪 Status & Roadmap
+
+AndroMate is currently in **Active Development (Beta)**.
+
+- [x] Core Voice & CLI functionality
+- [x] Multi-provider support
+- [ ] GUI Dashboard (Planned)
+- [ ] Enhanced Context Awareness
+
+We welcome contributions! Please see `CONTRIBUTING.md` for guidelines.
 
 ---
 
 ## 📄 License
 
-This project is open-sourced under the MIT License. You are free to modify, distribute, and use the code for personal or commercial purposes.
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/Anon4You">Anon4You</a>
+  Developed with ❤️ by <a href="https://github.com/Anon4You">Anon4You</a>
 </p>
+

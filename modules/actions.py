@@ -6,8 +6,9 @@ import os
 import json
 from datetime import datetime
 from contacts import match_contact
-from config import APP_NAME_TO_PACKAGE
+from config import APP_NAME_TO_PACKAGE, USER_CONFIG_PATH, AI_PROVIDER
 from utils import speak
+from providers import get_available_providers
 
 # -------------------------------------------------------------------
 # Helpers
@@ -23,6 +24,27 @@ def get_timestamp_filename(prefix="photo", ext="jpg"):
     """Generate a filename with current timestamp."""
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{prefix}_{ts}.{ext}"
+
+def get_launcher_activity(package):
+    """Return the component name (package/activity) for the package's default launcher."""
+    try:
+        result = subprocess.run(
+            ["pm", "resolve-activity", "--brief", package],
+            capture_output=True, text=True, check=True
+        )
+        lines = result.stdout.strip().split('\n')
+        if lines and lines[0]:
+            return lines[0].strip()
+    except subprocess.CalledProcessError:
+        print(f"Could not resolve activity for {package}")
+    return None
+
+def send_notification(title, content):
+    """Helper to send a Termux notification."""
+    try:
+        subprocess.run(["termux-notification", "--id", "andromate_error", "--title", title, "--content", content])
+    except:
+        pass
 
 # -------------------------------------------------------------------
 # Existing actions (SMS, call, WhatsApp, Telegram, email, open_app, reply_notification, run_shell)
@@ -68,16 +90,28 @@ def send_whatsapp(recipient_name, message):
     if contact and contact['phone']:
         number = re.sub(r'[\s\-+]', '', contact['phone'])
         url = f"https://wa.me/{number}?text={urllib.parse.quote(message)}"
-        subprocess.run(["termux-open", url])
-        print(f"WhatsApp opened to {contact['original_name']} with message.")
-        speak(f"WhatsApp opened to {contact['original_name']}")
+        try:
+            subprocess.run(["termux-open", url], check=True)
+            print(f"WhatsApp opened to {contact['original_name']}.")
+            speak(f"WhatsApp opened to {contact['original_name']}")
+        except Exception as e:
+            err = f"Error opening WhatsApp: {e}"
+            print(err)
+            speak("Sorry, I couldn't open WhatsApp.")
+            send_notification("WhatsApp Error", err)
     else:
         phone = extract_phone_number(recipient_name)
         if phone:
             url = f"https://wa.me/{phone}?text={urllib.parse.quote(message)}"
-            subprocess.run(["termux-open", url])
-            print(f"WhatsApp opened to {phone} (as direct number) with message.")
-            speak(f"WhatsApp opened to {phone}")
+            try:
+                subprocess.run(["termux-open", url], check=True)
+                print(f"WhatsApp opened to {phone}.")
+                speak(f"WhatsApp opened to {phone}")
+            except Exception as e:
+                err = f"Error opening WhatsApp: {e}"
+                print(err)
+                speak("Sorry, I couldn't open WhatsApp.")
+                send_notification("WhatsApp Error", err)
         else:
             msg = f"No phone number for '{recipient_name}'. WhatsApp not sent."
             print(msg)
@@ -88,16 +122,28 @@ def send_telegram(recipient_name, message):
     if contact and contact['phone']:
         number = re.sub(r'[\s\-+]', '', contact['phone'])
         uri = f"tg://msg?text={urllib.parse.quote(message)}&to={number}"
-        subprocess.run(["termux-open", uri])
-        print(f"Telegram opened to {contact['original_name']} with message.")
-        speak(f"Telegram opened to {contact['original_name']}")
+        try:
+            subprocess.run(["termux-open", uri], check=True)
+            print(f"Telegram opened to {contact['original_name']}.")
+            speak(f"Telegram opened to {contact['original_name']}")
+        except Exception as e:
+            err = f"Error opening Telegram: {e}"
+            print(err)
+            speak("Sorry, I couldn't open Telegram.")
+            send_notification("Telegram Error", err)
     else:
         phone = extract_phone_number(recipient_name)
         if phone:
             uri = f"tg://msg?text={urllib.parse.quote(message)}&to={phone}"
-            subprocess.run(["termux-open", uri])
-            print(f"Telegram opened to {phone} (as direct number) with message.")
-            speak(f"Telegram opened to {phone}")
+            try:
+                subprocess.run(["termux-open", uri], check=True)
+                print(f"Telegram opened to {phone}.")
+                speak(f"Telegram opened to {phone}")
+            except Exception as e:
+                err = f"Error opening Telegram: {e}"
+                print(err)
+                speak("Sorry, I couldn't open Telegram.")
+                send_notification("Telegram Error", err)
         else:
             msg = f"No phone number for '{recipient_name}'. Telegram not sent."
             print(msg)
@@ -108,15 +154,27 @@ def send_email(recipient_name, subject, body):
     if contact and contact['email']:
         email = contact['email']
         uri = f"mailto:{email}?subject={urllib.parse.quote(subject)}&body={urllib.parse.quote(body)}"
-        subprocess.run(["termux-open", uri])
-        print(f"Email composer opened to {contact['original_name']} ({email})")
-        speak(f"Email composer opened for {contact['original_name']}")
+        try:
+            subprocess.run(["termux-open", uri], check=True)
+            print(f"Email composer opened to {contact['original_name']} ({email})")
+            speak(f"Email opened to {contact['original_name']}")
+        except Exception as e:
+            err = f"Error opening email: {e}"
+            print(err)
+            speak("Sorry, I couldn't open email.")
+            send_notification("Email Error", err)
     else:
         if '@' in recipient_name and '.' in recipient_name:
             uri = f"mailto:{recipient_name}?subject={urllib.parse.quote(subject)}&body={urllib.parse.quote(body)}"
-            subprocess.run(["termux-open", uri])
-            print(f"Email composer opened to {recipient_name}")
-            speak(f"Email composer opened to {recipient_name}")
+            try:
+                subprocess.run(["termux-open", uri], check=True)
+                print(f"Email composer opened to {recipient_name}")
+                speak(f"Email opened to {recipient_name}")
+            except Exception as e:
+                err = f"Error opening email: {e}"
+                print(err)
+                speak("Sorry, I couldn't open email.")
+                send_notification("Email Error", err)
         else:
             msg = f"No email for '{recipient_name}'. Email not sent."
             print(msg)
@@ -127,17 +185,24 @@ def open_app(app_name):
     package = APP_NAME_TO_PACKAGE.get(app_lower, app_name)
     print(f"Attempting to open {app_name} (package: {package})")
     speak(f"Opening {app_name}")
-    result = subprocess.run(
-        ["am", "start", "-p", package],
-        capture_output=True,
-        text=True
-    )
-    if result.returncode == 0:
-        print(f"Launched {package}")
+    component = get_launcher_activity(package)
+    if component:
+        cmd = ["am", "start", "--user", "0", "--activity-clear-top", "-n", component]
     else:
-        error_msg = f"Failed to launch {package}. Error: {result.stderr}"
-        print(error_msg)
+        cmd = ["am", "start", "-p", package]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"Launched {package}")
+        else:
+            error_msg = f"Failed to launch {package}. Error: {result.stderr}"
+            print(error_msg)
+            speak(f"Sorry, I couldn't open {app_name}")
+            send_notification("App Launch Error", error_msg)
+    except Exception as e:
+        print(f"Exception launching app: {e}")
         speak(f"Sorry, I couldn't open {app_name}")
+        send_notification("App Launch Error", str(e))
 
 def reply_notification(app_name, reply_text):
     subprocess.run([
@@ -182,7 +247,6 @@ def run_shell(command):
 # New Termux:API actions
 # -------------------------------------------------------------------
 def get_battery():
-    """Fetch and display battery status."""
     try:
         result = subprocess.run(["termux-battery-status"], capture_output=True, text=True, check=True)
         data = json.loads(result.stdout)
@@ -195,7 +259,6 @@ def get_battery():
         speak("Sorry, I couldn't get the battery status.")
 
 def set_brightness(level):
-    """Set screen brightness (0-255)."""
     try:
         subprocess.run(["termux-brightness", str(level)], check=True)
         print(f"Brightness set to {level}")
@@ -205,7 +268,6 @@ def set_brightness(level):
         speak("Failed to set brightness")
 
 def take_photo(filename=None):
-    """Take a photo using termux-camera-photo."""
     if not filename:
         filename = get_timestamp_filename("photo", "jpg")
     try:
@@ -217,7 +279,6 @@ def take_photo(filename=None):
         speak("Failed to take photo")
 
 def toggle_torch(state):
-    """Turn torch on/off."""
     if state.lower() in ("on", "off"):
         try:
             subprocess.run(["termux-torch", state.lower()], check=True)
@@ -231,7 +292,6 @@ def toggle_torch(state):
         speak("Invalid torch state")
 
 def get_location(provider="gps"):
-    """Get current location."""
     try:
         result = subprocess.run(["termux-location", "-p", provider], capture_output=True, text=True, check=True)
         print("Location:")
@@ -246,7 +306,6 @@ def get_location(provider="gps"):
         speak("Sorry, I couldn't get your location")
 
 def media_play():
-    """Play media."""
     try:
         subprocess.run(["termux-media-player", "play"], check=True)
         print("Media playing")
@@ -256,7 +315,6 @@ def media_play():
         speak("Failed to play media")
 
 def media_pause():
-    """Pause media."""
     try:
         subprocess.run(["termux-media-player", "pause"], check=True)
         print("Media paused")
@@ -266,7 +324,6 @@ def media_pause():
         speak("Failed to pause media")
 
 def media_next():
-    """Next track."""
     try:
         subprocess.run(["termux-media-player", "next"], check=True)
         print("Next track")
@@ -276,7 +333,6 @@ def media_next():
         speak("Failed to skip track")
 
 def media_previous():
-    """Previous track."""
     try:
         subprocess.run(["termux-media-player", "previous"], check=True)
         print("Previous track")
@@ -286,7 +342,6 @@ def media_previous():
         speak("Failed to go to previous track")
 
 def set_volume(stream, level):
-    """Set volume for a specific stream (music, call, system, notification, alarm)."""
     try:
         subprocess.run(["termux-volume", stream, str(level)], check=True)
         print(f"Volume for {stream} set to {level}")
@@ -296,7 +351,6 @@ def set_volume(stream, level):
         speak("Failed to set volume")
 
 def get_wifi_info():
-    """Display current WiFi connection info."""
     try:
         result = subprocess.run(["termux-wifi-connectioninfo"], capture_output=True, text=True, check=True)
         print("WiFi connection info:")
@@ -309,7 +363,6 @@ def get_wifi_info():
         speak("Sorry, I couldn't get WiFi info")
 
 def scan_wifi():
-    """Scan for nearby WiFi networks."""
     try:
         result = subprocess.run(["termux-wifi-scaninfo"], capture_output=True, text=True, check=True)
         print("WiFi scan results:")
@@ -320,7 +373,6 @@ def scan_wifi():
         speak("Failed to scan WiFi")
 
 def download_file(url, destination=None):
-    """Download a file using termux-download."""
     cmd = ["termux-download", url]
     if destination:
         cmd.extend(["-d", destination])
@@ -334,7 +386,6 @@ def download_file(url, destination=None):
         speak("Failed to download file")
 
 def set_wallpaper(image_path):
-    """Set wallpaper from an image file."""
     try:
         subprocess.run(["termux-wallpaper", image_path], check=True)
         print(f"Wallpaper set from {image_path}")
@@ -344,7 +395,6 @@ def set_wallpaper(image_path):
         speak("Failed to set wallpaper")
 
 def get_device_info():
-    """Display telephony device info."""
     try:
         result = subprocess.run(["termux-telephony-deviceinfo"], capture_output=True, text=True, check=True)
         print("Device info:")
@@ -355,7 +405,6 @@ def get_device_info():
         speak("Failed to get device info")
 
 def fingerprint():
-    """Authenticate using fingerprint sensor."""
     try:
         result = subprocess.run(["termux-fingerprint"], capture_output=True, text=True, check=True)
         print("Fingerprint authentication result:")
@@ -370,7 +419,6 @@ def fingerprint():
         speak("Fingerprint sensor error")
 
 def infrared(pattern):
-    """Transmit infrared signal with pattern (comma-separated)."""
     try:
         subprocess.run(["termux-infrared-transmit", "--pattern", pattern], check=True)
         print(f"Infrared signal transmitted with pattern: {pattern}")
@@ -380,12 +428,94 @@ def infrared(pattern):
         speak("Failed to send infrared signal")
 
 # -------------------------------------------------------------------
-# New conversational reply action
+# Image generation action (updated to auto-answer 'y')
+# -------------------------------------------------------------------
+def generate_image(prompt):
+    """Generate an image using tgpt with arta provider."""
+    print(f"🎨 Generating image for: '{prompt}'")
+    speak("Generating image. Please wait...")
+    cmd = ["tgpt", "--provider", "arta", "--img", prompt]
+    try:
+        # Run tgpt, automatically answering 'y' to save prompt
+        result = subprocess.run(
+            cmd,
+            input="y\n",           # sends 'y' and newline
+            capture_output=True,
+            text=True,
+            timeout=120
+        )
+        if result.returncode != 0:
+            print(f"❌ Error: {result.stderr}")
+            speak("Image generation failed.")
+            return
+        # Parse output to find saved filename
+        output = result.stdout + result.stderr
+        # Look for "Image URL: ..." and then maybe "Saved as ..."
+        url_match = re.search(r'Image URL: (https?://[^\s]+)', output)
+        if url_match:
+            print(f"🔗 Image URL: {url_match.group(1)}")
+        # Try to find saved filename (tgpt might say "Saved to ...")
+        save_match = re.search(r'saved to (.*\.(png|jpg|jpeg))', output, re.IGNORECASE)
+        if save_match:
+            filename = save_match.group(1)
+            print(f"✅ Image saved: {filename}")
+            speak(f"Image saved as {os.path.basename(filename)}")
+        else:
+            print("✅ Image generated. Check your Pictures folder.")
+            speak("Image generated.")
+    except subprocess.TimeoutExpired:
+        print("⏱️ Image generation timed out.")
+        speak("Image generation timed out.")
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        speak("An error occurred.")
+
+# -------------------------------------------------------------------
+# Conversational reply action
 # -------------------------------------------------------------------
 def reply(response):
     """Speak a conversational response."""
-    print(f"Bolt says: {response}")
+    print(f"AndroMate says: {response}")
     speak(response)
+
+# -------------------------------------------------------------------
+# Provider management actions
+# -------------------------------------------------------------------
+def list_providers():
+    """List available AI providers."""
+    providers = get_available_providers()
+    msg = "Available AI providers: " + ", ".join(providers)
+    print(msg)
+    speak(msg)
+
+def set_provider(provider_name):
+    """Change the AI provider (persistent)."""
+    providers = get_available_providers()
+    if provider_name not in providers:
+        msg = f"Provider '{provider_name}' not found. Available: {', '.join(providers)}"
+        print(msg)
+        speak(msg)
+        return
+    config = {}
+    if os.path.exists(USER_CONFIG_PATH):
+        try:
+            with open(USER_CONFIG_PATH, "r") as f:
+                config = json.load(f)
+        except:
+            pass
+    config["AI_PROVIDER"] = provider_name
+    os.makedirs(os.path.dirname(USER_CONFIG_PATH), exist_ok=True)
+    with open(USER_CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+    msg = f"AI provider changed to {provider_name}. It will be used from now on."
+    print(msg)
+    speak(msg)
+
+def get_current_provider():
+    """Tell the user which AI provider is currently active."""
+    msg = f"Currently using {AI_PROVIDER} as the AI provider."
+    print(msg)
+    speak(msg)
 
 # -------------------------------------------------------------------
 # Main dispatcher
@@ -444,6 +574,14 @@ def execute_action(decision):
         infrared(decision.get('pattern'))
     elif action == 'reply':
         reply(decision.get('response'))
+    elif action == 'list_providers':
+        list_providers()
+    elif action == 'set_provider':
+        set_provider(decision.get('provider'))
+    elif action == 'get_current_provider':
+        get_current_provider()
+    elif action == 'generate_image':
+        generate_image(decision.get('prompt'))
     elif action == 'clipboard_action':
         pass  # handled in clipboard module
     else:
