@@ -8,7 +8,7 @@ def ask_ai(text, context="general"):
     Send user input to OpenRouter and return structured action.
     """
     prompt = f"""
-You are TermuxBolt, an Android automation assistant running inside Termux. You have access to many Termux:API features. Based on the user input and context, decide an action and output a JSON object with the required fields.
+You are AndroMate, an Android automation assistant running inside Termux. You have access to many Termux:API features. Based on the user input and context, decide an action and output a JSON object with the required fields.
 
 Possible actions and their required JSON keys:
 
@@ -61,10 +61,10 @@ Examples:
 - User: "Authenticate with fingerprint" -> {{"action": "fingerprint"}}
 - User: "Send infrared signal 123,456" -> {{"action": "infrared", "pattern": "123,456"}}
 
-- User: "Hello" -> {{"action": "reply", "response": "Hello! How can I assist you today?"}}
+- User: "Hello" -> {{"action": "reply", "response": "Hello! I'm AndroMate. How can I assist you today?"}}
 - User: "How are you?" -> {{"action": "reply", "response": "I'm doing great, thanks for asking!"}}
-- User: "Who are you?" -> {{"action": "reply", "response": "I'm TermuxBolt, your AI assistant for Android!"}}
-- User: "What's your name?" -> {{"action": "reply", "response": "My name is TermuxBolt."}}
+- User: "Who are you?" -> {{"action": "reply", "response": "I'm AndroMate, your AI assistant for Android!"}}
+- User: "What's your name?" -> {{"action": "reply", "response": "My name is AndroMate."}}
 - User: "Tell me a joke" -> {{"action": "reply", "response": "Why don't scientists trust atoms? Because they make up everything!"}}
 - User: "Thank you" -> {{"action": "reply", "response": "You're welcome! Happy to help."}}
 - User: "Good morning" -> {{"action": "reply", "response": "Good morning! Hope you have a great day."}}
@@ -77,7 +77,7 @@ User input: "{text}"
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "arcee-ai/trinity-large-preview:free",
+        "model": "arcee-ai/trinity-mini:free",
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0
     }
