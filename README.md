@@ -1,86 +1,132 @@
-# AndroMate 🤖
-
-**AndroMate** is a voice‑controlled AI assistant for Termux on Android. It lets you send messages, make calls, open apps, run shell commands, control device features (torch, brightness, media, etc.), and even chat conversationally – all through natural voice commands.
-
-> ⚠️ **Note:** This tool is still in active development. It works **only inside Termux** on Android devices.
-
----
-
-## ✨ Features
-- 🎤 Voice recognition (Google Speech)
-- 🧠 AI decision‑making via OpenRouter (free model)
-- 📱 Send SMS, WhatsApp, Telegram, email
-- 📞 Make phone calls
-- 🚀 Open any app by name
-- 🛠️ Execute Termux shell commands
-- 🔋 Get battery status, set brightness
-- 📸 Take photos, toggle torch
-- 🎵 Control media playback
-- 📍 Fetch GPS location
-- 📋 Monitor and transform clipboard
-- 🔔 Auto‑reply to notifications
-- 💬 Conversational replies (e.g., “how are you?”)
-- 🔊 Spoken confirmations (uses `termux-tts-speak`)
-
-
-## 📦 Requirements
-
-Make sure the following are installed **inside Termux**:
-
-| Package | Description |
-|---------|-------------|
-| `termux-api` | Termux:API package (`pkg install termux-api`) |
-| **Termux:API app** | Install from F‑Droid (required for hardware access) |
-| `ffmpeg` | Audio conversion (`pkg install ffmpeg`) |
-| `flac` | Audio codec (`pkg install flac`) |
-| `python` | Already included in Termux |
-| `requests` | Python HTTP library (`pip install requests`) |
-| `SpeechRecognition` | Google speech‑to‑text (`pip install SpeechRecognition`) |
-
-After installing the Termux:API app, run each relevant command once to grant permissions (e.g., `termux-microphone-record`, `termux-sms-send`, etc.).
+<p align="center">
+  <h1 align="center">AndroMate 🤖</h1>
+  <p align="center">
+    <em>A powerful, voice-controlled AI assistant designed specifically for Termux on Android.</em>
+  </p>
+  <p align="center">
+    <a href="#features">Features</a> •
+    <a href="#prerequisites">Prerequisites</a> •
+    <a href="#installation">Installation</a> •
+    <a href="#usage">Usage</a> •
+    <a href="#license">License</a>
+  </p>
+</p>
 
 ---
 
-## 🚀 Quick Start
- **Clone the repository** (or copy the files):
-   ```bash
-git clone https://github.com/Anon4You/AndroMate.git
-cd AndroMate
-   ```
+## 📝 Overview
 
-1. **Set your OpenRouter API key** (free tier available):
+**AndroMate** bridges the gap between natural language processing and Android system controls. By leveraging the Termux API and OpenRouter's AI capabilities, AndroMate allows users to interact with their device using natural voice commands or a CLI interface.
+
+Whether you need to send messages, toggle hardware settings, execute shell scripts, or simply chat, AndroMate acts as a unified interface for device automation.
+
+> ⚠️ **Status:** This project is in active development. It is designed exclusively for the Termux environment on Android.
+
+---
+
+## ✨ Key Features
+
+### 🧠 AI & Interaction
+*   **Natural Language Processing:** Powered by OpenRouter (supports free models) to understand intent.
+*   **Voice Recognition:** Utilizes Google Speech-to-Text for hands-free command execution.
+*   **Conversational Mode:** Engages in dialogue and answers general queries.
+*   **Audible Feedback:** Provides spoken confirmations via `termux-tts-speak`.
+
+### 📱 Device Control
+*   **Communication:** Send SMS, WhatsApp, Telegram, and Email messages; make phone calls.
+*   **System Automation:** Open apps by name, execute shell commands, and manage clipboard content.
+*   **Hardware Access:** Get battery status, set screen brightness, take photos, and toggle the torch.
+*   **Media & Location:** Control media playback and fetch current GPS coordinates.
+*   **Background Monitoring:** Auto-reply to notifications and monitor clipboard changes.
+
+---
+
+## 📦 Prerequisites
+
+To ensure full functionality, the following components must be installed and configured in your Termux environment.
+
+### System Dependencies
+Ensure you have the **Termux:API** app installed from F-Droid (essential for hardware access).
+
 ```bash
-echo "your-api-key-here" > ~/.openrouter_key
+pkg update && pkg upgrade
+pkg install termux-api ffmpeg flac python
 ```
 
-2. **Run a voice command:**
+### Python Libraries
+Install the required Python packages:
+
+```bash
+pip install requests SpeechRecognition
+```
+
+> **Note:** After installing the Termux:API app, manually run commands like `termux-microphone-record` or `termux-sms-send` once to grant the necessary Android permissions.
+
+---
+
+## 🚀 Installation
+
+Follow these steps to get AndroMate up and running.
+
+1.  **Clone the Repository**
+    ```bash
+    git clone https://github.com/Anon4You/AndroMate.git
+    cd AndroMate
+    ```
+
+2.  **Configure API Key**
+    AndroMate requires an OpenRouter API key for AI decision-making. You can obtain a free key from [OpenRouter](https://openrouter.ai/).
+    
+    Save your key to the configuration file:
+    ```bash
+    echo "YOUR_OPENROUTER_API_KEY" > ~/.openrouter_key
+    ```
+
+---
+
+## 💻 Usage
+
+AndroMate offers three distinct modes of operation:
+
+### 1. Voice Mode (Interactive)
+Activate the assistant to listen for a single command.
 ```bash
 python andromate.py voice
 ```
 
-4. **Run background monitor** (notifications & clipboard):
+### 2. CLI Mode (Interactive Shell)
+Type commands directly into an interactive prompt.
+```bash
+python andromate.py cli
+```
+
+### 3. Background Mode (Daemon)
+Runs silently to monitor notifications and clipboard activity.
 ```bash
 python andromate.py
 ```
 
----
-
-## 📚 Usage
-
-· python andromate.py voice – greet, listen, and act on one command.
-· python andromate.py – background mode (monitors notifications & clipboard).
-· Termux widget – place a one‑tap icon on your home screen (see Widget setup).
+### 📱 Widget Integration
+For quick access, you can create a Termux widget shortcut on your home screen. Refer to the [Termux:Widget](https://wiki.termux.com/wiki/Termux:Widget) documentation for setup instructions.
 
 ---
 
-## 🧪 Still in Development
+## 🛠️ Development Status
 
-· Some features may be unstable.
-· The free AI model can occasionally misinterpret commands.
-· Contributions and ideas are welcome!
+AndroMate is currently in **Beta**.
+
+*   **Stability:** Some features may be subject to instability depending on device Android version.
+*   **AI Accuracy:** The default free AI model may occasionally misinterpret complex commands.
+*   **Contributing:** We welcome contributions, bug reports, and feature requests. Please feel free to fork the repository and submit a pull request.
 
 ---
 
 ## 📄 License
 
-This project is open‑source. Feel free to modify and share.
+This project is open-sourced under the MIT License. You are free to modify, distribute, and use the code for personal or commercial purposes.
+
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/Anon4You">Anon4You</a>
+</p>
