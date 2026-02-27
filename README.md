@@ -35,7 +35,7 @@
 - [💻 Usage](#-usage)
 - [⚙️ Configuration](#️-configuration)
 - [🧩 Project Structure](#-project-structure)
-- [🤝 Contributing](#-contributing)
+- [🤝 Contributing](CONTRIBUTING.md)
 - [📄 License](#-license)
 
 ---
