@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://via.placeholder.com/200x200?text=AndroMate" alt="AndroMate Logo" width="200"/>
+  <img src="img/img.png" alt="AndroMate Logo" width="200"/>
   
   <h1 align="center">AndroMate</h1>
   
