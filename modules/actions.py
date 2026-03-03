@@ -4,6 +4,8 @@ import re
 import urllib.parse
 import os
 import json
+import smtplib
+from email.message import EmailMessage
 from datetime import datetime
 from contacts import match_contact, get_contacts
 from config import APP_NAME_TO_PACKAGE, USER_CONFIG_PATH
@@ -64,7 +66,7 @@ def send_notification(title, content):
         pass
 
 # -------------------------------------------------------------------
-# Existing actions (SMS, call, WhatsApp, Telegram, email, open_app, reply_notification, run_shell)
+# Existing actions (SMS, call, WhatsApp, Telegram, open_app, reply_notification, run_shell)
 # -------------------------------------------------------------------
 def send_sms(recipient_name, message):
     contact, score = match_contact(recipient_name)
@@ -163,37 +165,6 @@ def send_telegram(recipient_name, message):
                 send_notification("Telegram Error", err)
         else:
             msg = f"No phone number for '{recipient_name}'. Telegram not sent."
-            print(msg)
-            speak(msg)
-
-def send_email(recipient_name, subject, body):
-    contact, score = match_contact(recipient_name)
-    if contact and contact['email']:
-        email = contact['email']
-        uri = f"mailto:{email}?subject={urllib.parse.quote(subject)}&body={urllib.parse.quote(body)}"
-        try:
-            subprocess.run(["termux-open", uri], check=True)
-            print(f"Email composer opened to {contact['original_name']} ({email})")
-            speak(f"Email opened to {contact['original_name']}")
-        except Exception as e:
-            err = f"Error opening email: {e}"
-            print(err)
-            speak("Sorry, I couldn't open email.")
-            send_notification("Email Error", err)
-    else:
-        if '@' in recipient_name and '.' in recipient_name:
-            uri = f"mailto:{recipient_name}?subject={urllib.parse.quote(subject)}&body={urllib.parse.quote(body)}"
-            try:
-                subprocess.run(["termux-open", uri], check=True)
-                print(f"Email composer opened to {recipient_name}")
-                speak(f"Email opened to {recipient_name}")
-            except Exception as e:
-                err = f"Error opening email: {e}"
-                print(err)
-                speak("Sorry, I couldn't open email.")
-                send_notification("Email Error", err)
-        else:
-            msg = f"No email for '{recipient_name}'. Email not sent."
             print(msg)
             speak(msg)
 
@@ -623,7 +594,7 @@ def list_contacts(limit=20):
         speak("Failed to list contacts.")
 
 # -------------------------------------------------------------------
-# Toast and Dialog actions (NEW)
+# Toast and Dialog actions
 # -------------------------------------------------------------------
 def show_toast(text):
     """Show a transient popup notification."""
@@ -670,6 +641,40 @@ def show_dialog(dialog_type="confirm", title=None, hint=None):
         speak("Failed to show dialog.")
 
 # -------------------------------------------------------------------
+# Email via SMTP (using Gmail app password)
+# -------------------------------------------------------------------
+def send_email_smtp(recipient, subject, body):
+    """
+    Send email using Gmail SMTP with app password.
+    Requires email credentials in config (EMAIL_SENDER, EMAIL_APP_PASSWORD).
+    """
+    sender = config.EMAIL_SENDER
+    password = config.EMAIL_APP_PASSWORD
+    
+    if not sender or not password:
+        msg = "Email credentials not configured. Please set EMAIL_SENDER and EMAIL_APP_PASSWORD in config."
+        print(msg)
+        speak("Email not configured.")
+        return
+    
+    try:
+        email = EmailMessage()
+        email["From"] = sender
+        email["To"] = recipient
+        email["Subject"] = subject
+        email.set_content(body)
+        
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(sender, password)
+            smtp.send_message(email)
+        
+        print(f"Email sent to {recipient}: {subject}")
+        speak("Email sent.")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        speak("Failed to send email.")
+
+# -------------------------------------------------------------------
 # Image generation action (updated to auto-answer 'y')
 # -------------------------------------------------------------------
 def generate_image(prompt):
@@ -678,10 +683,9 @@ def generate_image(prompt):
     speak("Generating image. Please wait...")
     cmd = ["tgpt", "--provider", "arta", "--img", prompt]
     try:
-        # Run tgpt, automatically answering 'y' to save prompt
         result = subprocess.run(
             cmd,
-            input="y\n",           # sends 'y' and newline
+            input="y\n",
             capture_output=True,
             text=True,
             timeout=120
@@ -690,13 +694,10 @@ def generate_image(prompt):
             print(f"❌ Error: {result.stderr}")
             speak("Image generation failed.")
             return
-        # Parse output to find saved filename
         output = result.stdout + result.stderr
-        # Look for "Image URL: ..." and then maybe "Saved as ..."
         url_match = re.search(r'Image URL: (https?://[^\s]+)', output)
         if url_match:
             print(f"🔗 Image URL: {url_match.group(1)}")
-        # Try to find saved filename (tgpt might say "Saved to ...")
         save_match = re.search(r'saved to (.*\.(png|jpg|jpeg))', output, re.IGNORECASE)
         if save_match:
             filename = save_match.group(1)
@@ -724,14 +725,12 @@ def reply(response):
 # Provider management actions
 # -------------------------------------------------------------------
 def list_providers():
-    """List available AI providers."""
     providers = get_available_providers()
     msg = "Available AI providers: " + ", ".join(providers)
     print(msg)
     speak(msg)
 
 def set_provider(provider_name):
-    """Change the AI provider (persistent)."""
     providers = get_available_providers()
     if provider_name not in providers:
         msg = f"Provider '{provider_name}' not found. Available: {', '.join(providers)}"
@@ -750,15 +749,12 @@ def set_provider(provider_name):
     with open(USER_CONFIG_PATH, "w") as f:
         json.dump(config_data, f, indent=2)
     
-    # Reload config so the change takes effect immediately
     config.reload_config()
-    
     msg = f"AI provider changed to {provider_name}. It will be used from now on."
     print(msg)
     speak(msg)
 
 def get_current_provider():
-    """Tell the user which AI provider is currently active."""
     msg = f"Currently using {config.AI_PROVIDER} as the AI provider."
     print(msg)
     speak(msg)
@@ -776,8 +772,6 @@ def execute_action(decision):
         send_whatsapp(decision.get('recipient'), decision.get('message'))
     elif action == 'send_telegram':
         send_telegram(decision.get('recipient'), decision.get('message'))
-    elif action == 'send_email':
-        send_email(decision.get('recipient'), decision.get('subject', ''), decision.get('message', ''))
     elif action == 'open_app':
         open_app(decision.get('app'))
     elif action == 'reply_notification':
@@ -830,7 +824,6 @@ def execute_action(decision):
     elif action == 'list_contacts':
         limit = decision.get('limit', 20)
         list_contacts(limit)
-    # New actions
     elif action == 'show_toast':
         show_toast(decision.get('text'))
     elif action == 'show_dialog':
@@ -838,6 +831,12 @@ def execute_action(decision):
             decision.get('dialog_type', 'confirm'),
             decision.get('title'),
             decision.get('hint')
+        )
+    elif action == 'send_email_smtp':
+        send_email_smtp(
+            decision.get('recipient'),
+            decision.get('subject', ''),
+            decision.get('message', '')
         )
     elif action == 'reply':
         reply(decision.get('response'))
@@ -850,7 +849,7 @@ def execute_action(decision):
     elif action == 'generate_image':
         generate_image(decision.get('prompt'))
     elif action == 'clipboard_action':
-        pass  # handled in clipboard module
+        pass
     else:
         print("No action taken.")
         speak("I didn't understand the action.")

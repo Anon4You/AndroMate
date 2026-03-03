@@ -12,6 +12,8 @@ DEFAULTS = {
     "ENABLE_CLIPBOARD": True,
     "MIN_AI_CALL_INTERVAL": 5,
     "AI_PROVIDER": "pollinations",  # default
+    "EMAIL_SENDER": "",
+    "EMAIL_APP_PASSWORD": "",
 }
 
 # Load user config if exists
@@ -30,6 +32,8 @@ ENABLE_NOTIFICATIONS = _user_config.get("ENABLE_NOTIFICATIONS", DEFAULTS["ENABLE
 ENABLE_CLIPBOARD = _user_config.get("ENABLE_CLIPBOARD", DEFAULTS["ENABLE_CLIPBOARD"])
 MIN_AI_CALL_INTERVAL = _user_config.get("MIN_AI_CALL_INTERVAL", DEFAULTS["MIN_AI_CALL_INTERVAL"])
 AI_PROVIDER = _user_config.get("AI_PROVIDER", DEFAULTS["AI_PROVIDER"])
+EMAIL_SENDER = _user_config.get("EMAIL_SENDER", DEFAULTS["EMAIL_SENDER"])
+EMAIL_APP_PASSWORD = _user_config.get("EMAIL_APP_PASSWORD", DEFAULTS["EMAIL_APP_PASSWORD"])
 
 # OpenRouter – try environment variable, then file
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
@@ -65,7 +69,8 @@ APP_NAME_TO_PACKAGE = {
 def reload_config():
     """Reload user configuration from disk and update module-level variables."""
     global POLL_INTERVAL, ENABLE_VOICE, ENABLE_NOTIFICATIONS, ENABLE_CLIPBOARD
-    global MIN_AI_CALL_INTERVAL, AI_PROVIDER, _user_config
+    global MIN_AI_CALL_INTERVAL, AI_PROVIDER, EMAIL_SENDER, EMAIL_APP_PASSWORD
+    global _user_config
 
     # Re-read config file
     new_config = {}
@@ -85,3 +90,5 @@ def reload_config():
     ENABLE_CLIPBOARD = _user_config.get("ENABLE_CLIPBOARD", DEFAULTS["ENABLE_CLIPBOARD"])
     MIN_AI_CALL_INTERVAL = _user_config.get("MIN_AI_CALL_INTERVAL", DEFAULTS["MIN_AI_CALL_INTERVAL"])
     AI_PROVIDER = _user_config.get("AI_PROVIDER", DEFAULTS["AI_PROVIDER"])
+    EMAIL_SENDER = _user_config.get("EMAIL_SENDER", DEFAULTS["EMAIL_SENDER"])
+    EMAIL_APP_PASSWORD = _user_config.get("EMAIL_APP_PASSWORD", DEFAULTS["EMAIL_APP_PASSWORD"])

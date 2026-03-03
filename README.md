@@ -29,7 +29,6 @@
 ## 📖 Table of Contents
 
 - [✨ Features](#-features)
-- [🎨 Demo](#-demo)
 - [📦 Requirements](#-requirements)
 - [🚀 Installation](#-installation)
 - [💻 Usage](#-usage)
@@ -46,21 +45,23 @@
 - **Multi-Provider AI:** Seamlessly switch between **OpenRouter**, **OpenAI**, and **Pollinations** (free, no-key required).
 - **Native Voice Recognition:** Hands-free control via `termux-speech-to-text`. Faster, simpler, and works offline.
 - **Hot-Swappable Providers:** Switch AI providers instantly via command—no restart required.
-- **Conversational Context:** Understands natural queries like "How are you?" or "Who are you?".
 - **Spoken Feedback:** Uses `termux-tts-speak` for audible confirmations.
 
 ### 📱 Device Control & Automation
-- **Communication:** Send SMS, WhatsApp, Telegram, and Email. Auto-resolves contact names.
-- **Enhanced Logs:** Call logs and SMS inbox now display contact names, sent/received labels, and message previews.
+- **Communication:**
+  - **SMS & Calls:** Send SMS, view call logs with contact names, and make calls.
+  - **Email:** Send real background emails via SMTP (Gmail supported).
+  - **Messaging Apps:** WhatsApp and Telegram support (opens app with pre-filled message).
+- **Enhanced Logs:** Call logs and SMS inbox display contact names, sent/received labels, and message previews.
 - **Contact Management:** List all contacts with "show all" support.
-- **System Management:** Execute shell commands, control brightness, volume, WiFi, and battery monitoring.
-- **Connectivity:** New `wifi_enable` command to turn WiFi on directly.
+- **System Management:** Execute shell commands, control brightness, volume, and monitor battery.
+- **Connectivity:** Turn WiFi on via voice command (Note: Termux API does not support disabling WiFi).
 - **Media & Hardware:** 
-  - **Selfie Mode:** "Take a selfie" now automatically uses the front camera.
-  - **Smart Torch:** "Front torch" command warns about limitations and toggles main flash.
+  - **Selfie Mode:** "Take a selfie" automatically uses the front camera.
+  - **Smart Torch:** "Front torch" warns about hardware limitations and toggles main flash.
+- **Interactive UI:** Uses `termux-toast` for popups and `termux-dialog` for interactive prompts.
 - **Background Monitoring:**
   - **Clipboard Watcher:** Automatically translates or summarizes copied text.
-  - **Notification Auto-Reply:** Intelligently responds to incoming notifications.
 
 ### 🎨 Advanced Capabilities
 - **Enhanced CLI:** Colored output for better readability and persistent command history saved in `~/.andromate/`.
@@ -80,7 +81,6 @@ Ensure the following dependencies are installed in your Termux environment.
 | `termux-api` | API interface package | `pkg install termux-api` |
 | `tgpt` | Local AI/Image generation backend | `pkg install tgpt` |
 
-> **Note:** `ffmpeg` and `flac` are no longer required as the voice system now uses native Termux speech recognition.
 
 ### Python Libraries
 ```bash
@@ -120,18 +120,17 @@ AndroMate offers three distinct operational modes:
 | :--- | :--- | :--- |
 | **Voice** | `python andromate.py voice` | Listens using native `termux-speech-to-text`, executes commands instantly. |
 | **CLI** | `python andromate.py cli` | Interactive shell with colored output and saved history. Great for debugging. |
-| **Daemon** | `python andromate.py` | Background mode. Monitors notifications and clipboard changes. |
+| **Daemon** | `python andromate.py` | Background mode. Monitors clipboard changes. |
 
 ### 🗣️ Example Commands
 
 **Messaging & Calls**
-> "Send a WhatsApp message to John saying I'm on my way."
+> "Send an email to John saying I'll be late."
 > "Show all contacts."
 > "Read my last SMS."
 
 **System & Utilities**
 > "Turn on WiFi."
-> "What's my battery level?"
 > "Take a selfie."
 
 **AI & Media**
@@ -144,11 +143,25 @@ AndroMate offers three distinct operational modes:
 
 Configuration settings are stored in `~/.andromate/config.json` (auto-generated on first run) or managed via voice commands.
 
+### 📧 Email Setup (SMTP)
+To send emails, add your Gmail credentials to `~/.andromate/config.json`:
+
+```json
+{
+  "EMAIL_SENDER": "your.email@gmail.com",
+  "EMAIL_APP_PASSWORD": "your-16-char-app-password"
+}
+```
+
+1. Enable 2FA on your Google account.
+2. Generate an **App Password** (use this instead of your regular password).
+3. The assistant will use this to send emails silently in the background.
+
+### General Settings
 - **Switching Providers:**
   - Voice: *"Switch to pollinations"* (Changes apply instantly).
   - Config: Edit the `provider` key in `config.json`.
-- **CLI History:** Your command history is automatically saved in `~/.andromate/` for persistence across sessions.
-- **Rate Limiting:** Adjust `MIN_AI_CALL_INTERVAL` in `modules/config.py` to prevent API spamming.
+- **CLI History:** Your command history is automatically saved in `~/.andromate/`.
 
 ---
 
@@ -161,7 +174,7 @@ AndroMate/
 ├── andromate.py          # Main entry point
 └── modules/
     ├── __init__.py
-    ├── actions.py        # Core action implementations (Call, SMS, Selfie, Torch)
+    ├── actions.py        # Core action implementations (Call, SMS, Email, Selfie)
     ├── ai.py             # AI decision routing logic
     ├── cli.py            # Interactive CLI loop with history
     ├── clipboard.py      # Clipboard monitoring service
@@ -169,7 +182,7 @@ AndroMate/
     ├── contacts.py       # Fuzzy contact name matching & listing
     ├── error_handler.py  # Centralized error logging
     ├── main.py           # Background daemon logic
-    ├── notifications.py  # Notification listener
+    ├── notifications.py  # Toast and Dialog handlers
     ├── prompt_manager.py # Dynamic AI prompt generation
     ├── providers.py      # API wrappers (OpenRouter, Pollinations, etc.)
     ├── utils.py          # Helpers (TTS, fuzzy matching, etc.)
