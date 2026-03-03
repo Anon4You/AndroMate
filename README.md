@@ -255,7 +255,7 @@ AndroMate is currently in **Active Development (Beta)**.
 - [x] Multi-provider support (Hot-swap)
 - [x] Telegram Remote Control
 - [x] Web Dashboard
-- [ ] Enhanced Context Awareness
+- [x] Enhanced Context Awareness
 
 We welcome contributions! Please see `CONTRIBUTING.md` for guidelines.
 

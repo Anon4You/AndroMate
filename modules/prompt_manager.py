@@ -1,11 +1,21 @@
-# prompt_manager.py
+# modules/prompt_manager.py
 
-def get_prompt(user_input, context):
+def get_prompt(user_input, context, history="", auto_context=""):
     """
     Build the prompt for the AI.
+    :param user_input: the user's current input
+    :param context: where the command came from (voice, cli, telegram, web)
+    :param history: optional conversation history
+    :param auto_context: optional automatic context like time
     """
     base = f"""
-You are AndroMate, an Android automation assistant running inside Termux. You have access to many Termux:API features. Based on the user input and context, decide an action and output a JSON object with the required fields.
+You are AndroMate, an Android automation assistant running inside Termux. You have access to many Termux:API features. Based on the user input, conversation history, and context, decide an action and output a JSON object with the required fields.
+
+{auto_context}
+{history}
+
+Current context: {context}
+User input: "{user_input}"
 
 Possible actions and their required JSON keys:
 
