@@ -21,8 +21,11 @@ def main():
         elif sys.argv[1] == "telegram":
             from telegram_bot import run_bot
             run_bot()
+        elif sys.argv[1] == "web":
+            from web_dashboard import run_web
+            run_web(host='127.0.0.1', port=5000, debug=False)
         else:
-            print("Usage: andromate [voice|cli|telegram]")
+            print("Usage: andromate [voice|cli|telegram|web]")
     else:
         from main import main as background_main
         background_main()

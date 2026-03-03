@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>AndroMate · AI Assistant</title>
+    <!-- Google Fonts & Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="chat-card">
+        <!-- Sidebar with device status -->
+        <div class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fas fa-robot"></i></div>
+                <div class="logo-text">
+                    <h2>AndroMate</h2>
+                    <p>local · private · fast</p>
+                </div>
+            </div>
+            <div class="status-panel">
+                <div class="status-item">
+                    <div class="status-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="status-info">
+                        <div class="status-label">Battery</div>
+                        <div class="status-value" id="batteryValue">— <small></small></div>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <div class="status-icon"><i class="fas fa-wifi"></i></div>
+                    <div class="status-info">
+                        <div class="status-label">WiFi</div>
+                        <div class="status-value" id="wifiValue">—</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tip-box">
+                <i class="fas fa-lightbulb"></i>
+                <p><strong>Try:</strong> "battery level", "open YouTube", "take a selfie", "send email to ..."</p>
+            </div>
+        </div>
+        <!-- Main chat area -->
+        <div class="main-chat">
+            <div class="chat-header">
+                <i class="fas fa-comment-dots"></i>
+                <h3>Conversation</h3>
+            </div>
+            <div class="messages-container" id="chat">
+                <!-- Messages will be inserted via JavaScript -->
+            </div>
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <input type="text" id="command" placeholder="Ask me anything..." autofocus>
+                    <button id="sendBtn"><i class="fas fa-arrow-up"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chat = document.getElementById('chat');
+        const commandInput = document.getElementById('command');
+        const sendBtn = document.getElementById('sendBtn');
+        const batterySpan = document.getElementById('batteryValue');
+        const wifiSpan = document.getElementById('wifiValue');
+
+        // Helper to add a message row
+        function addMessage(sender, text, isError = false) {
+            const row = document.createElement('div');
+            row.className = `message-row ${sender}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${sender}`;
+            avatar.innerHTML = sender === 'assistant' ? '<i class="fas fa-robot"></i>' : '<i class="fas fa-user"></i>';
+
+            const bubble = document.createElement('div');
+            bubble.className = `bubble ${sender}${isError ? ' error' : ''}`;
+            bubble.innerHTML = text.replace(/\n/g, '<br>');
+            
+            const time = document.createElement('div');
+            time.className = 'timestamp';
+            time.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            bubble.appendChild(time);
+
+            if (sender === 'assistant') {
+                row.appendChild(avatar);
+                row.appendChild(bubble);
+            } else {
+                row.appendChild(bubble);
+                row.appendChild(avatar);
+            }
+            chat.appendChild(row);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // Initial welcome message
+        addMessage('assistant', 'Hello! I\'m **AndroMate**. How can I assist you today?');
+
+        // Send command
+        async function sendCommand() {
+            const cmd = commandInput.value.trim();
+            if (!cmd) return;
+
+            addMessage('user', cmd);
+            commandInput.value = '';
+            commandInput.disabled = true;
+            sendBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: cmd })
+                });
+                const data = await response.json();
+                if (data.error) {
+                    addMessage('assistant', `❌ Error: ${data.error}`, true);
+                } else {
+                    const output = data.output.trim() || '✅ Done.';
+                    addMessage('assistant', output);
+                }
+            } catch (e) {
+                addMessage('assistant', `Network error: ${e.message}`, true);
+            } finally {
+                commandInput.disabled = false;
+                sendBtn.disabled = false;
+                commandInput.focus();
+            }
+        }
+
+        // Update status
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                // Battery
+                if (data.battery !== undefined && data.battery !== 'unknown') {
+                    batterySpan.innerHTML = `${data.battery}% <small>${data.battery_status || ''}</small>`;
+                } else {
+                    batterySpan.innerText = '—';
+                }
+                // WiFi – show "Not connected" if none
+                if (data.wifi && data.wifi !== 'unknown' && data.wifi !== 'error') {
+                    wifiSpan.innerText = data.wifi;
+                } else {
+                    wifiSpan.innerText = 'Not connected';
+                }
+            } catch (e) {
+                batterySpan.innerText = '—';
+                wifiSpan.innerText = '—';
+            }
+        }
+
+        sendBtn.addEventListener('click', sendCommand);
+        commandInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendCommand();
+        });
+
+        // initial update & periodic refresh
+        updateStatus();
+        setInterval(updateStatus, 30000);
+    </script>
+</body>
+</html>

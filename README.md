@@ -5,7 +5,7 @@
   
   <p align="center">
     <strong>A powerful, modular AI assistant for Termux on Android.</strong><br>
-    <sub>Control your device with natural voice commands, CLI, automated background tasks, or Telegram.</sub>
+    <sub>Control your device with natural voice commands, CLI, Web Dashboard, Telegram, or automated background tasks.</sub>
   </p>
 
   <p align="center">
@@ -32,7 +32,8 @@
 - [📦 Requirements](#-requirements)
 - [🚀 Installation](#-installation)
 - [💻 Usage](#-usage)
-- [🌐 Remote Control via Telegram](#-remote-control-via-telegram)
+- [🌐 Web Dashboard](#-web-dashboard)
+- [📱 Remote Control via Telegram](#-remote-control-via-telegram)
 - [⚙️ Configuration](#️-configuration)
 - [🧩 Project Structure](#-project-structure)
 - [🤝 Contributing](CONTRIBUTING.md)
@@ -64,11 +65,12 @@
 - **Background Monitoring:**
   - **Clipboard Watcher:** Automatically translates or summarizes copied text.
 
-### 🌐 Remote Control
+### 🌐 Remote Control & Interfaces
+- **Web Dashboard:** Monitor and control AndroMate via a local web interface (`http://127.0.0.1:5000`).
 - **Telegram Bot:** Control your device from anywhere in the world via a Telegram bot. Execute commands, send messages, or check system status remotely.
+- **Enhanced CLI:** Colored output for better readability and persistent command history saved in `~/.andromate/`.
 
 ### 🎨 Advanced Capabilities
-- **Enhanced CLI:** Colored output for better readability and persistent command history saved in `~/.andromate/`.
 - **Image Generation:** Create AI art using `tgpt` (e.g., "Generate a cyberpunk cat").
 - **Modular Design:** Easily extend functionality by adding new action modules.
 
@@ -86,10 +88,11 @@ Ensure the following dependencies are installed in your Termux environment.
 | `tgpt` | Local AI/Image generation backend | `pkg install tgpt` |
 | `tmux` | Terminal multiplexer for background sessions | `pkg install tmux` |
 
+> **Note:** `ffmpeg` and `flac` are no longer required as the voice system now uses native Termux speech recognition.
 
 ### Python Libraries
 ```bash
-pip install requests SpeechRecognition colorama telebot
+pip install requests SpeechRecognition colorama flask telebot
 ```
 
 > ⚠️ **Permission Grant:** After installing the Termux:API app, run commands like `termux-speech-to-text` or `termux-sms-send` once manually to grant necessary Android permissions.
@@ -124,7 +127,8 @@ AndroMate offers multiple operational modes:
 | Mode | Command | Description |
 | :--- | :--- | :--- |
 | **Voice** | `python andromate.py voice` | Listens using native `termux-speech-to-text`, executes commands instantly. |
-| **CLI** | `python andromate.py cli` | Interactive shell with colored output and saved history. Great for debugging. |
+| **CLI** | `python andromate.py cli` | Interactive shell with colored output and saved history. |
+| **Web** | `python andromate.py web` | Launches the Flask Web Dashboard. |
 | **Telegram** | `python andromate.py telegram` | Starts the Telegram bot for remote control. |
 | **Daemon** | `python andromate.py` | Background mode. Monitors clipboard changes. |
 
@@ -144,7 +148,20 @@ AndroMate offers multiple operational modes:
 
 ---
 
-## 🌐 Remote Control via Telegram
+## 🌐 Web Dashboard
+
+Launch the local web server to control AndroMate from your browser:
+
+```bash
+python andromate.py web
+```
+
+- **Local URL:** `http://127.0.0.1:5000`
+- **Security:** Accessible only from the device itself by default.
+
+---
+
+## 📱 Remote Control via Telegram
 
 Control your Android device from anywhere using a Telegram bot.
 
@@ -223,7 +240,8 @@ AndroMate/
     ├── providers.py      # API wrappers (OpenRouter, Pollinations, etc.)
     ├── telegram_bot.py   # Telegram bot interface
     ├── utils.py          # Helpers (TTS, fuzzy matching, etc.)
-    └── voice.py          # Native termux-speech-to-text logic
+    ├── voice.py          # Native termux-speech-to-text logic
+    └── web_dashboard.py  # Flask web interface backend
 ```
 
 ---
@@ -236,7 +254,7 @@ AndroMate is currently in **Active Development (Beta)**.
 - [x] Native Speech-to-Text integration
 - [x] Multi-provider support (Hot-swap)
 - [x] Telegram Remote Control
-- [ ] GUI Dashboard (Planned)
+- [x] Web Dashboard
 - [ ] Enhanced Context Awareness
 
 We welcome contributions! Please see `CONTRIBUTING.md` for guidelines.
