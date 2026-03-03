@@ -78,7 +78,6 @@ Ensure the following dependencies are installed in your Termux environment.
 | :--- | :--- | :--- |
 | **Termux:API App** | Essential bridge for hardware access | [Download from F-Droid](https://f-droid.org/packages/com.termux.api/) |
 | `termux-api` | API interface package | `pkg install termux-api` |
-| `termux-tts-speak` | Text-to-speech engine | `pkg install termux-tts-speak` |
 | `tgpt` | Local AI/Image generation backend | `pkg install tgpt` |
 
 > **Note:** `ffmpeg` and `flac` are no longer required as the voice system now uses native Termux speech recognition.
