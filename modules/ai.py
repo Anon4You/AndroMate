@@ -1,6 +1,6 @@
 # ai.py
 import json
-from config import AI_PROVIDER
+import config  # import the module, not the variable
 from providers import PROVIDERS
 from prompt_manager import get_prompt
 import error_handler
@@ -11,9 +11,10 @@ def ask_ai(text, context="general"):
     """
     prompt = get_prompt(text, context)
     try:
-        provider_func = PROVIDERS.get(AI_PROVIDER)
+        # Access current provider from config module (always up-to-date)
+        provider_func = PROVIDERS.get(config.AI_PROVIDER)
         if not provider_func:
-            error_handler.log_error(f"Unknown AI provider: {AI_PROVIDER}", notify_user=True)
+            error_handler.log_error(f"Unknown AI provider: {config.AI_PROVIDER}", notify_user=True)
             return {"action": "none"}
         content = provider_func(prompt)
         # Extract JSON from response
@@ -26,5 +27,5 @@ def ask_ai(text, context="general"):
             print("No JSON found in response.")
             return {"action": "none"}
     except Exception as e:
-        error_handler.log_error(e, f"AI call failed with provider {AI_PROVIDER}", notify_user=True)
+        error_handler.log_error(e, f"AI call failed with provider {config.AI_PROVIDER}", notify_user=True)
         return {"action": "none"}

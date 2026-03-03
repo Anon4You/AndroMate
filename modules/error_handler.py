@@ -2,6 +2,7 @@
 import os
 import sys
 import traceback
+import subprocess  # <-- ADDED: needed for termux-notification
 from datetime import datetime
 from utils import speak
 

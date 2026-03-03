@@ -5,8 +5,9 @@ import urllib.parse
 import os
 import json
 from datetime import datetime
-from contacts import match_contact
-from config import APP_NAME_TO_PACKAGE, USER_CONFIG_PATH, AI_PROVIDER
+from contacts import match_contact, get_contacts
+from config import APP_NAME_TO_PACKAGE, USER_CONFIG_PATH
+import config
 from utils import speak
 from providers import get_available_providers
 
@@ -18,6 +19,22 @@ def extract_phone_number(text):
     digits = re.sub(r'\D', '', text)
     if len(digits) >= 10:
         return digits
+    return None
+
+def normalize_phone(phone):
+    """Remove all non-digit characters from a phone number for comparison."""
+    return re.sub(r'\D', '', phone) if phone else ''
+
+def find_contact_by_phone(phone_number):
+    """Search contacts by phone number (normalized) and return contact name or None."""
+    normalized = normalize_phone(phone_number)
+    if not normalized:
+        return None
+    contacts = get_contacts()
+    for c in contacts:
+        c_phone = c.get('phone', '')
+        if normalize_phone(c_phone) == normalized:
+            return c.get('original_name')
     return None
 
 def get_timestamp_filename(prefix="photo", ext="jpg"):
@@ -267,29 +284,60 @@ def set_brightness(level):
         print(f"Error setting brightness: {e}")
         speak("Failed to set brightness")
 
-def take_photo(filename=None):
+def take_photo(filename=None, camera="back"):
+    """
+    Take a photo using termux-camera-photo.
+    :param filename: optional filename (auto-generated if None)
+    :param camera: which camera to use - "back", "front", or camera ID ("0", "1")
+    """
     if not filename:
         filename = get_timestamp_filename("photo", "jpg")
+    
+    # Map camera names to termux-camera-photo camera IDs
+    if camera in ["front", "selfie"]:
+        camera_arg = "1"
+    elif camera in ["back", "rear"]:
+        camera_arg = "0"
+    elif camera.isdigit():
+        camera_arg = camera
+    else:
+        print(f"Unknown camera '{camera}', using back camera.")
+        camera_arg = "0"
+    
     try:
-        subprocess.run(["termux-camera-photo", filename], check=True)
-        print(f"Photo saved to {filename}")
+        # termux-camera-photo accepts -c for camera ID
+        subprocess.run(["termux-camera-photo", "-c", camera_arg, filename], check=True)
+        print(f"Photo saved to {filename} using camera {camera_arg}")
         speak("Photo taken")
     except Exception as e:
         print(f"Error taking photo: {e}")
         speak("Failed to take photo")
 
-def toggle_torch(state):
-    if state.lower() in ("on", "off"):
-        try:
-            subprocess.run(["termux-torch", state.lower()], check=True)
-            print(f"Torch turned {state}")
-            speak(f"Torch turned {state}")
-        except Exception as e:
-            print(f"Error toggling torch: {e}")
-            speak("Failed to toggle torch")
-    else:
+def toggle_torch(state, camera=None):
+    """
+    Toggle torch on/off.
+    :param state: "on" or "off"
+    :param camera: optional camera ID (only for info; torch usually controls main flash)
+    """
+    if state.lower() not in ("on", "off"):
         print("Invalid torch state. Use 'on' or 'off'.")
         speak("Invalid torch state")
+        return
+    
+    # Note: termux-torch does not support camera selection (it controls main flash)
+    if camera:
+        if camera.lower() in ["front", "1"]:
+            print("Note: Front flash is not available. Toggling main torch instead.")
+            speak("Front flash not available, using main torch")
+        # else ignore camera
+    
+    try:
+        subprocess.run(["termux-torch", state.lower()], check=True)
+        print(f"Torch turned {state}")
+        speak(f"Torch turned {state}")
+    except Exception as e:
+        print(f"Error toggling torch: {e}")
+        speak("Failed to toggle torch")
 
 def get_location(provider="gps"):
     try:
@@ -357,7 +405,10 @@ def get_wifi_info():
         print(result.stdout)
         data = json.loads(result.stdout)
         ssid = data.get('ssid', 'unknown')
-        speak(f"Connected to WiFi network {ssid}")
+        bssid = data.get('bssid', 'unknown')
+        ip = data.get('ip', 'unknown')
+        speed = data.get('link_speed_mbps', 'unknown')
+        speak(f"Connected to WiFi network {ssid}, IP address {ip}, signal speed {speed} megabits per second")
     except Exception as e:
         print(f"Error getting WiFi info: {e}")
         speak("Sorry, I couldn't get WiFi info")
@@ -371,6 +422,16 @@ def scan_wifi():
     except Exception as e:
         print(f"Error scanning WiFi: {e}")
         speak("Failed to scan WiFi")
+
+def wifi_enable():
+    """Enable WiFi using termux-wifi-enable."""
+    try:
+        subprocess.run(["termux-wifi-enable"], check=True)
+        print("WiFi enabled")
+        speak("WiFi turned on")
+    except Exception as e:
+        print(f"Error enabling WiFi: {e}")
+        speak("Failed to enable WiFi")
 
 def download_file(url, destination=None):
     cmd = ["termux-download", url]
@@ -426,6 +487,140 @@ def infrared(pattern):
     except Exception as e:
         print(f"Error transmitting infrared: {e}")
         speak("Failed to send infrared signal")
+
+# -------------------------------------------------------------------
+# Call log and SMS inbox actions (ENHANCED)
+# -------------------------------------------------------------------
+def get_call_log(limit=10):
+    """Fetch and display recent call log entries using the name field directly."""
+    try:
+        result = subprocess.run(["termux-call-log", "-l", str(limit)], 
+                                capture_output=True, text=True, check=True)
+        calls = json.loads(result.stdout)
+        if not calls:
+            print("No call log entries found.")
+            speak("No recent calls.")
+            return
+        
+        print(f"\n📞 Recent calls (last {len(calls)}):")
+        speak(f"Showing {len(calls)} recent calls.")
+        
+        for i, call in enumerate(calls, 1):
+            # Use name field if available, fallback to phone_number
+            name = call.get('name', '').strip()
+            phone = call.get('phone_number', 'Unknown')
+            display_name = name if name else phone
+            
+            call_type = call.get('type', 'unknown')
+            duration = call.get('duration', '00:00')
+            date = call.get('date', '')
+            print(f"{i}. {display_name} ({call_type}) - {duration} on {date}")
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr or "Unknown error"
+        print(f"Error fetching call log: {error_msg}")
+        if "Permission denied" in error_msg or "not granted" in error_msg.lower():
+            speak("Call log permission not granted. Please run 'termux-call-log' manually once to grant permission.")
+        else:
+            speak("Failed to get call log. Check if Termux:API is installed.")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        speak("Failed to get call log.")
+
+def get_sms_inbox(limit=10, unread_only=False):
+    """Fetch and display recent SMS messages using termux-sms-list."""
+    try:
+        cmd = ["termux-sms-list", "-l", str(limit)]
+        if unread_only:
+            cmd.append("-u")
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        messages = json.loads(result.stdout)
+        if not messages:
+            print("No SMS messages found.")
+            speak("No messages.")
+            return
+        
+        status = "unread " if unread_only else ""
+        print(f"\n📨 Recent {status}SMS (last {len(messages)}):")
+        speak(f"Showing {len(messages)} {status}messages.")
+        
+        for i, msg in enumerate(messages, 1):
+            msg_type = msg.get('type', 'unknown')
+            # Determine direction
+            if msg_type == 'sent':
+                direction = "To"
+                identifier = msg.get('address') or msg.get('number') or 'Unknown'
+            else:
+                direction = "From"
+                identifier = msg.get('address') or msg.get('number') or 'Unknown'
+            
+            # Try to resolve contact name if identifier looks like a phone number
+            if re.match(r'^[\d\+\-]+$', identifier):
+                display_name = find_contact_by_phone(identifier) or identifier
+            else:
+                display_name = identifier
+            
+            body = msg.get('body', '')
+            date = msg.get('received', '')
+            # Truncate long texts for display
+            if body:
+                short_text = body[:50] + ('...' if len(body) > 50 else '')
+            else:
+                short_text = '(no content)'
+            print(f"{i}. {direction} {display_name}: {short_text} ({date})")
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr or "Unknown error"
+        print(f"Error fetching SMS inbox: {error_msg}")
+        if "Permission denied" in error_msg or "not granted" in error_msg.lower():
+            speak("SMS permission not granted. Please run 'termux-sms-list' manually once to grant permission.")
+        elif "not found" in error_msg.lower() or "no such file" in error_msg.lower():
+            speak("termux-sms-list command not found. Please install Termux:API.")
+        else:
+            speak("Failed to get SMS messages.")
+    except FileNotFoundError:
+        print("termux-sms-list command not found. Please install Termux:API.")
+        speak("SMS command not found. Please install Termux:API.")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        speak("Failed to get SMS messages.")
+
+# -------------------------------------------------------------------
+# Contacts list action (UPDATED - shows all when limit <= 0)
+# -------------------------------------------------------------------
+def list_contacts(limit=20):
+    """Fetch and display contacts from termux-contact-list."""
+    try:
+        contacts = get_contacts()
+        if not contacts:
+            print("No contacts found.")
+            speak("No contacts found.")
+            return
+        
+        total = len(contacts)
+        if limit <= 0 or limit >= total:
+            show_contacts = contacts
+            msg = f"Showing all {total} contacts."
+        else:
+            show_contacts = contacts[:limit]
+            msg = f"Showing first {len(show_contacts)} of {total} contacts."
+        
+        print(f"\n📇 {msg}")
+        speak(msg)
+        
+        for i, c in enumerate(show_contacts, 1):
+            name = c.get('original_name', 'Unknown')
+            phone = c.get('phone', '')
+            email = c.get('email', '')
+            if phone and email:
+                print(f"{i}. {name} - {phone} / {email}")
+            elif phone:
+                print(f"{i}. {name} - {phone}")
+            elif email:
+                print(f"{i}. {name} - {email}")
+            else:
+                print(f"{i}. {name}")
+    except Exception as e:
+        print(f"Error listing contacts: {e}")
+        speak("Failed to list contacts.")
 
 # -------------------------------------------------------------------
 # Image generation action (updated to auto-answer 'y')
@@ -496,24 +691,28 @@ def set_provider(provider_name):
         print(msg)
         speak(msg)
         return
-    config = {}
+    config_data = {}
     if os.path.exists(USER_CONFIG_PATH):
         try:
             with open(USER_CONFIG_PATH, "r") as f:
-                config = json.load(f)
+                config_data = json.load(f)
         except:
             pass
-    config["AI_PROVIDER"] = provider_name
+    config_data["AI_PROVIDER"] = provider_name
     os.makedirs(os.path.dirname(USER_CONFIG_PATH), exist_ok=True)
     with open(USER_CONFIG_PATH, "w") as f:
-        json.dump(config, f, indent=2)
+        json.dump(config_data, f, indent=2)
+    
+    # Reload config so the change takes effect immediately
+    config.reload_config()
+    
     msg = f"AI provider changed to {provider_name}. It will be used from now on."
     print(msg)
     speak(msg)
 
 def get_current_provider():
     """Tell the user which AI provider is currently active."""
-    msg = f"Currently using {AI_PROVIDER} as the AI provider."
+    msg = f"Currently using {config.AI_PROVIDER} as the AI provider."
     print(msg)
     speak(msg)
 
@@ -543,9 +742,9 @@ def execute_action(decision):
     elif action == 'set_brightness':
         set_brightness(decision.get('level'))
     elif action == 'take_photo':
-        take_photo(decision.get('filename'))
+        take_photo(decision.get('filename'), decision.get('camera', 'back'))
     elif action == 'toggle_torch':
-        toggle_torch(decision.get('state'))
+        toggle_torch(decision.get('state'), decision.get('camera'))
     elif action == 'get_location':
         get_location(decision.get('provider', 'gps'))
     elif action == 'media_play':
@@ -562,6 +761,8 @@ def execute_action(decision):
         get_wifi_info()
     elif action == 'scan_wifi':
         scan_wifi()
+    elif action == 'wifi_enable':
+        wifi_enable()
     elif action == 'download_file':
         download_file(decision.get('url'), decision.get('destination'))
     elif action == 'set_wallpaper':
@@ -572,6 +773,16 @@ def execute_action(decision):
         fingerprint()
     elif action == 'infrared':
         infrared(decision.get('pattern'))
+    elif action == 'get_call_log':
+        limit = decision.get('limit', 10)
+        get_call_log(limit)
+    elif action == 'get_sms_inbox':
+        limit = decision.get('limit', 10)
+        unread = decision.get('unread_only', False)
+        get_sms_inbox(limit, unread)
+    elif action == 'list_contacts':
+        limit = decision.get('limit', 20)
+        list_contacts(limit)
     elif action == 'reply':
         reply(decision.get('response'))
     elif action == 'list_providers':

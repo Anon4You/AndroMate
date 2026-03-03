@@ -15,21 +15,21 @@ DEFAULTS = {
 }
 
 # Load user config if exists
-user_config = {}
+_user_config = {}
 if os.path.exists(USER_CONFIG_PATH):
     try:
         with open(USER_CONFIG_PATH, "r") as f:
-            user_config = json.load(f)
+            _user_config = json.load(f)
     except:
         pass
 
-# Apply user overrides
-POLL_INTERVAL = user_config.get("POLL_INTERVAL", DEFAULTS["POLL_INTERVAL"])
-ENABLE_VOICE = user_config.get("ENABLE_VOICE", DEFAULTS["ENABLE_VOICE"])
-ENABLE_NOTIFICATIONS = user_config.get("ENABLE_NOTIFICATIONS", DEFAULTS["ENABLE_NOTIFICATIONS"])
-ENABLE_CLIPBOARD = user_config.get("ENABLE_CLIPBOARD", DEFAULTS["ENABLE_CLIPBOARD"])
-MIN_AI_CALL_INTERVAL = user_config.get("MIN_AI_CALL_INTERVAL", DEFAULTS["MIN_AI_CALL_INTERVAL"])
-AI_PROVIDER = user_config.get("AI_PROVIDER", DEFAULTS["AI_PROVIDER"])
+# Apply user overrides (module-level variables)
+POLL_INTERVAL = _user_config.get("POLL_INTERVAL", DEFAULTS["POLL_INTERVAL"])
+ENABLE_VOICE = _user_config.get("ENABLE_VOICE", DEFAULTS["ENABLE_VOICE"])
+ENABLE_NOTIFICATIONS = _user_config.get("ENABLE_NOTIFICATIONS", DEFAULTS["ENABLE_NOTIFICATIONS"])
+ENABLE_CLIPBOARD = _user_config.get("ENABLE_CLIPBOARD", DEFAULTS["ENABLE_CLIPBOARD"])
+MIN_AI_CALL_INTERVAL = _user_config.get("MIN_AI_CALL_INTERVAL", DEFAULTS["MIN_AI_CALL_INTERVAL"])
+AI_PROVIDER = _user_config.get("AI_PROVIDER", DEFAULTS["AI_PROVIDER"])
 
 # OpenRouter – try environment variable, then file
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
@@ -61,3 +61,27 @@ APP_NAME_TO_PACKAGE = {
     "instagram": "com.instagram.android",
     "facebook": "com.facebook.katana",
 }
+
+def reload_config():
+    """Reload user configuration from disk and update module-level variables."""
+    global POLL_INTERVAL, ENABLE_VOICE, ENABLE_NOTIFICATIONS, ENABLE_CLIPBOARD
+    global MIN_AI_CALL_INTERVAL, AI_PROVIDER, _user_config
+
+    # Re-read config file
+    new_config = {}
+    if os.path.exists(USER_CONFIG_PATH):
+        try:
+            with open(USER_CONFIG_PATH, "r") as f:
+                new_config = json.load(f)
+        except:
+            pass
+
+    _user_config = new_config
+
+    # Update module variables
+    POLL_INTERVAL = _user_config.get("POLL_INTERVAL", DEFAULTS["POLL_INTERVAL"])
+    ENABLE_VOICE = _user_config.get("ENABLE_VOICE", DEFAULTS["ENABLE_VOICE"])
+    ENABLE_NOTIFICATIONS = _user_config.get("ENABLE_NOTIFICATIONS", DEFAULTS["ENABLE_NOTIFICATIONS"])
+    ENABLE_CLIPBOARD = _user_config.get("ENABLE_CLIPBOARD", DEFAULTS["ENABLE_CLIPBOARD"])
+    MIN_AI_CALL_INTERVAL = _user_config.get("MIN_AI_CALL_INTERVAL", DEFAULTS["MIN_AI_CALL_INTERVAL"])
+    AI_PROVIDER = _user_config.get("AI_PROVIDER", DEFAULTS["AI_PROVIDER"])

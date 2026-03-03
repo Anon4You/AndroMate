@@ -44,19 +44,26 @@
 
 ### 🧠 Core Intelligence
 - **Multi-Provider AI:** Seamlessly switch between **OpenRouter**, **OpenAI**, and **Pollinations** (free, no-key required).
-- **Voice Recognition:** Hands-free control via Google Speech-to-Text.
+- **Native Voice Recognition:** Hands-free control via `termux-speech-to-text`. Faster, simpler, and works offline.
+- **Hot-Swappable Providers:** Switch AI providers instantly via command—no restart required.
 - **Conversational Context:** Understands natural queries like "How are you?" or "Who are you?".
 - **Spoken Feedback:** Uses `termux-tts-speak` for audible confirmations.
 
 ### 📱 Device Control & Automation
 - **Communication:** Send SMS, WhatsApp, Telegram, and Email. Auto-resolves contact names.
+- **Enhanced Logs:** Call logs and SMS inbox now display contact names, sent/received labels, and message previews.
+- **Contact Management:** List all contacts with "show all" support.
 - **System Management:** Execute shell commands, control brightness, volume, WiFi, and battery monitoring.
-- **Media & Hardware:** Take photos, toggle torch, play/pause media, and fetch GPS location.
+- **Connectivity:** New `wifi_enable` command to turn WiFi on directly.
+- **Media & Hardware:** 
+  - **Selfie Mode:** "Take a selfie" now automatically uses the front camera.
+  - **Smart Torch:** "Front torch" command warns about limitations and toggles main flash.
 - **Background Monitoring:**
   - **Clipboard Watcher:** Automatically translates or summarizes copied text.
-  - **Notification Auto-Reply:** intelligently responds to incoming notifications.
+  - **Notification Auto-Reply:** Intelligently responds to incoming notifications.
 
 ### 🎨 Advanced Capabilities
+- **Enhanced CLI:** Colored output for better readability and persistent command history saved in `~/.andromate/`.
 - **Image Generation:** Create AI art using `tgpt` (e.g., "Generate a cyberpunk cat").
 - **Modular Design:** Easily extend functionality by adding new action modules.
 
@@ -71,17 +78,17 @@ Ensure the following dependencies are installed in your Termux environment.
 | :--- | :--- | :--- |
 | **Termux:API App** | Essential bridge for hardware access | [Download from F-Droid](https://f-droid.org/packages/com.termux.api/) |
 | `termux-api` | API interface package | `pkg install termux-api` |
-| `ffmpeg` | Audio encoding/decoding | `pkg install ffmpeg` |
-| `flac` | FLAC audio codec | `pkg install flac` |
 | `termux-tts-speak` | Text-to-speech engine | `pkg install termux-tts-speak` |
 | `tgpt` | Local AI/Image generation backend | `pkg install tgpt` |
 
+> **Note:** `ffmpeg` and `flac` are no longer required as the voice system now uses native Termux speech recognition.
+
 ### Python Libraries
 ```bash
-pip install requests SpeechRecognition
+pip install requests SpeechRecognition colorama
 ```
 
-> ⚠️ **Permission Grant:** After installing the Termux:API app, run commands like `termux-microphone-record` or `termux-sms-send` once manually to grant necessary Android permissions.
+> ⚠️ **Permission Grant:** After installing the Termux:API app, run commands like `termux-speech-to-text` or `termux-sms-send` once manually to grant necessary Android permissions.
 
 ---
 
@@ -112,25 +119,25 @@ AndroMate offers three distinct operational modes:
 
 | Mode | Command | Description |
 | :--- | :--- | :--- |
-| **Voice** | `python andromate.py voice` | Listens for a single voice command, executes it, and provides feedback. |
-| **CLI** | `python andromate.py cli` | Interactive shell mode for typing commands. Great for debugging. |
+| **Voice** | `python andromate.py voice` | Listens using native `termux-speech-to-text`, executes commands instantly. |
+| **CLI** | `python andromate.py cli` | Interactive shell with colored output and saved history. Great for debugging. |
 | **Daemon** | `python andromate.py` | Background mode. Monitors notifications and clipboard changes. |
 
 ### 🗣️ Example Commands
 
 **Messaging & Calls**
 > "Send a WhatsApp message to John saying I'm on my way."
-> "Call Mom."
+> "Show all contacts."
+> "Read my last SMS."
 
 **System & Utilities**
+> "Turn on WiFi."
 > "What's my battery level?"
-> "Set brightness to 50%."
-> "Update system packages." (Executes `pkg update`)
+> "Take a selfie."
 
 **AI & Media**
 > "Generate an image of a futuristic city."
-> "Switch to OpenAI provider."
-> "What providers are available?"
+> "Switch to OpenAI provider." (Takes effect immediately)
 
 ---
 
@@ -139,10 +146,10 @@ AndroMate offers three distinct operational modes:
 Configuration settings are stored in `~/.andromate/config.json` (auto-generated on first run) or managed via voice commands.
 
 - **Switching Providers:**
-  - Voice: *"Switch to pollinations"*
+  - Voice: *"Switch to pollinations"* (Changes apply instantly).
   - Config: Edit the `provider` key in `config.json`.
+- **CLI History:** Your command history is automatically saved in `~/.andromate/` for persistence across sessions.
 - **Rate Limiting:** Adjust `MIN_AI_CALL_INTERVAL` in `modules/config.py` to prevent API spamming.
-- **Custom App Mapping:** Add specific app aliases to `APP_NAME_TO_PACKAGE` in `modules/config.py`.
 
 ---
 
@@ -155,19 +162,19 @@ AndroMate/
 ├── andromate.py          # Main entry point
 └── modules/
     ├── __init__.py
-    ├── actions.py        # Core action implementations (Call, SMS, Torch)
+    ├── actions.py        # Core action implementations (Call, SMS, Selfie, Torch)
     ├── ai.py             # AI decision routing logic
-    ├── cli.py            # Interactive CLI loop
+    ├── cli.py            # Interactive CLI loop with history
     ├── clipboard.py      # Clipboard monitoring service
     ├── config.py         # Static constants and configuration
-    ├── contacts.py       # Fuzzy contact name matching
+    ├── contacts.py       # Fuzzy contact name matching & listing
     ├── error_handler.py  # Centralized error logging
     ├── main.py           # Background daemon logic
     ├── notifications.py  # Notification listener
     ├── prompt_manager.py # Dynamic AI prompt generation
     ├── providers.py      # API wrappers (OpenRouter, Pollinations, etc.)
     ├── utils.py          # Helpers (TTS, fuzzy matching, etc.)
-    └── voice.py          # Recording & Speech-to-Text logic
+    └── voice.py          # Native termux-speech-to-text logic
 ```
 
 ---
@@ -177,7 +184,8 @@ AndroMate/
 AndroMate is currently in **Active Development (Beta)**.
 
 - [x] Core Voice & CLI functionality
-- [x] Multi-provider support
+- [x] Native Speech-to-Text integration
+- [x] Multi-provider support (Hot-swap)
 - [ ] GUI Dashboard (Planned)
 - [ ] Enhanced Context Awareness
 
@@ -194,4 +202,3 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 <p align="center">
   Developed with ❤️ by <a href="https://github.com/Anon4You">Anon4You</a>
 </p>
-
