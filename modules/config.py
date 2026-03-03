@@ -1,4 +1,4 @@
-# config.py
+# modules/config.py
 import os
 import json
 
@@ -14,6 +14,8 @@ DEFAULTS = {
     "AI_PROVIDER": "pollinations",  # default
     "EMAIL_SENDER": "",
     "EMAIL_APP_PASSWORD": "",
+    "TELEGRAM_BOT_TOKEN": "",
+    "TELEGRAM_AUTHORIZED_CHAT_ID": None,
 }
 
 # Load user config if exists
@@ -34,6 +36,8 @@ MIN_AI_CALL_INTERVAL = _user_config.get("MIN_AI_CALL_INTERVAL", DEFAULTS["MIN_AI
 AI_PROVIDER = _user_config.get("AI_PROVIDER", DEFAULTS["AI_PROVIDER"])
 EMAIL_SENDER = _user_config.get("EMAIL_SENDER", DEFAULTS["EMAIL_SENDER"])
 EMAIL_APP_PASSWORD = _user_config.get("EMAIL_APP_PASSWORD", DEFAULTS["EMAIL_APP_PASSWORD"])
+TELEGRAM_BOT_TOKEN = _user_config.get("TELEGRAM_BOT_TOKEN", DEFAULTS["TELEGRAM_BOT_TOKEN"])
+TELEGRAM_AUTHORIZED_CHAT_ID = _user_config.get("TELEGRAM_AUTHORIZED_CHAT_ID", DEFAULTS["TELEGRAM_AUTHORIZED_CHAT_ID"])
 
 # OpenRouter – try environment variable, then file
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
@@ -70,6 +74,7 @@ def reload_config():
     """Reload user configuration from disk and update module-level variables."""
     global POLL_INTERVAL, ENABLE_VOICE, ENABLE_NOTIFICATIONS, ENABLE_CLIPBOARD
     global MIN_AI_CALL_INTERVAL, AI_PROVIDER, EMAIL_SENDER, EMAIL_APP_PASSWORD
+    global TELEGRAM_BOT_TOKEN, TELEGRAM_AUTHORIZED_CHAT_ID
     global _user_config
 
     # Re-read config file
@@ -92,3 +97,5 @@ def reload_config():
     AI_PROVIDER = _user_config.get("AI_PROVIDER", DEFAULTS["AI_PROVIDER"])
     EMAIL_SENDER = _user_config.get("EMAIL_SENDER", DEFAULTS["EMAIL_SENDER"])
     EMAIL_APP_PASSWORD = _user_config.get("EMAIL_APP_PASSWORD", DEFAULTS["EMAIL_APP_PASSWORD"])
+    TELEGRAM_BOT_TOKEN = _user_config.get("TELEGRAM_BOT_TOKEN", DEFAULTS["TELEGRAM_BOT_TOKEN"])
+    TELEGRAM_AUTHORIZED_CHAT_ID = _user_config.get("TELEGRAM_AUTHORIZED_CHAT_ID", DEFAULTS["TELEGRAM_AUTHORIZED_CHAT_ID"])

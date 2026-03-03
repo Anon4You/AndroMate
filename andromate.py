@@ -18,8 +18,11 @@ def main():
         elif sys.argv[1] == "cli":
             from cli import run_cli
             run_cli()
+        elif sys.argv[1] == "telegram":
+            from telegram_bot import run_bot
+            run_bot()
         else:
-            print("Usage: andromate [voice|cli]")
+            print("Usage: andromate [voice|cli|telegram]")
     else:
         from main import main as background_main
         background_main()

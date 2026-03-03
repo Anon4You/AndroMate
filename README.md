@@ -5,7 +5,7 @@
   
   <p align="center">
     <strong>A powerful, modular AI assistant for Termux on Android.</strong><br>
-    <sub>Control your device with natural voice commands, CLI, or automated background tasks.</sub>
+    <sub>Control your device with natural voice commands, CLI, automated background tasks, or Telegram.</sub>
   </p>
 
   <p align="center">
@@ -32,6 +32,7 @@
 - [📦 Requirements](#-requirements)
 - [🚀 Installation](#-installation)
 - [💻 Usage](#-usage)
+- [🌐 Remote Control via Telegram](#-remote-control-via-telegram)
 - [⚙️ Configuration](#️-configuration)
 - [🧩 Project Structure](#-project-structure)
 - [🤝 Contributing](CONTRIBUTING.md)
@@ -55,13 +56,16 @@
 - **Enhanced Logs:** Call logs and SMS inbox display contact names, sent/received labels, and message previews.
 - **Contact Management:** List all contacts with "show all" support.
 - **System Management:** Execute shell commands, control brightness, volume, and monitor battery.
-- **Connectivity:** Turn WiFi on via voice command (Note: Termux API does not support disabling WiFi).
+- **Connectivity:** Turn WiFi on via voice command.
 - **Media & Hardware:** 
   - **Selfie Mode:** "Take a selfie" automatically uses the front camera.
   - **Smart Torch:** "Front torch" warns about hardware limitations and toggles main flash.
 - **Interactive UI:** Uses `termux-toast` for popups and `termux-dialog` for interactive prompts.
 - **Background Monitoring:**
   - **Clipboard Watcher:** Automatically translates or summarizes copied text.
+
+### 🌐 Remote Control
+- **Telegram Bot:** Control your device from anywhere in the world via a Telegram bot. Execute commands, send messages, or check system status remotely.
 
 ### 🎨 Advanced Capabilities
 - **Enhanced CLI:** Colored output for better readability and persistent command history saved in `~/.andromate/`.
@@ -80,11 +84,12 @@ Ensure the following dependencies are installed in your Termux environment.
 | **Termux:API App** | Essential bridge for hardware access | [Download from F-Droid](https://f-droid.org/packages/com.termux.api/) |
 | `termux-api` | API interface package | `pkg install termux-api` |
 | `tgpt` | Local AI/Image generation backend | `pkg install tgpt` |
+| `tmux` | Terminal multiplexer for background sessions | `pkg install tmux` |
 
 
 ### Python Libraries
 ```bash
-pip install requests SpeechRecognition colorama
+pip install requests SpeechRecognition colorama telebot
 ```
 
 > ⚠️ **Permission Grant:** After installing the Termux:API app, run commands like `termux-speech-to-text` or `termux-sms-send` once manually to grant necessary Android permissions.
@@ -114,12 +119,13 @@ pip install requests SpeechRecognition colorama
 
 ## 💻 Usage
 
-AndroMate offers three distinct operational modes:
+AndroMate offers multiple operational modes:
 
 | Mode | Command | Description |
 | :--- | :--- | :--- |
 | **Voice** | `python andromate.py voice` | Listens using native `termux-speech-to-text`, executes commands instantly. |
 | **CLI** | `python andromate.py cli` | Interactive shell with colored output and saved history. Great for debugging. |
+| **Telegram** | `python andromate.py telegram` | Starts the Telegram bot for remote control. |
 | **Daemon** | `python andromate.py` | Background mode. Monitors clipboard changes. |
 
 ### 🗣️ Example Commands
@@ -127,7 +133,6 @@ AndroMate offers three distinct operational modes:
 **Messaging & Calls**
 > "Send an email to John saying I'll be late."
 > "Show all contacts."
-> "Read my last SMS."
 
 **System & Utilities**
 > "Turn on WiFi."
@@ -136,6 +141,37 @@ AndroMate offers three distinct operational modes:
 **AI & Media**
 > "Generate an image of a futuristic city."
 > "Switch to OpenAI provider." (Takes effect immediately)
+
+---
+
+## 🌐 Remote Control via Telegram
+
+Control your Android device from anywhere using a Telegram bot.
+
+1. Create a bot with [@BotFather](https://t.me/botfather) and get a token.
+2. Add to `~/.andromate/config.json`:
+   ```json
+   {
+     "TELEGRAM_BOT_TOKEN": "your-bot-token",
+     "TELEGRAM_AUTHORIZED_CHAT_ID": 123456789
+   }
+   ```
+3. Run: `python andromate.py telegram`
+
+Now any command you send to the bot will be executed on your device (only your chat ID is allowed).
+
+### 🗲 Keeping It Running in Background
+The bot will stop if you close the Termux session. To keep it running in the background, use `tmux`:
+
+```bash
+# Start a new detached session
+tmux new -s andromate
+python andromate.py telegram
+# Detach with Ctrl+B, then press D
+
+# Reattach later
+tmux attach -t andromate
+```
 
 ---
 
@@ -185,6 +221,7 @@ AndroMate/
     ├── notifications.py  # Toast and Dialog handlers
     ├── prompt_manager.py # Dynamic AI prompt generation
     ├── providers.py      # API wrappers (OpenRouter, Pollinations, etc.)
+    ├── telegram_bot.py   # Telegram bot interface
     ├── utils.py          # Helpers (TTS, fuzzy matching, etc.)
     └── voice.py          # Native termux-speech-to-text logic
 ```
@@ -198,6 +235,7 @@ AndroMate is currently in **Active Development (Beta)**.
 - [x] Core Voice & CLI functionality
 - [x] Native Speech-to-Text integration
 - [x] Multi-provider support (Hot-swap)
+- [x] Telegram Remote Control
 - [ ] GUI Dashboard (Planned)
 - [ ] Enhanced Context Awareness
 
