@@ -42,6 +42,9 @@ Possible actions and their required JSON keys:
 - get_sms_inbox: {{"action": "get_sms_inbox", "limit": 10, "unread_only": false}} – fetch recent SMS (optional limit and unread only)
 - list_contacts: {{"action": "list_contacts", "limit": 20}} – list contacts (optional limit)
 
+- show_toast: {{"action": "show_toast", "text": "message"}} – show a temporary popup message
+- show_dialog: {{"action": "show_dialog", "dialog_type": "confirm/text/...", "title": "optional", "hint": "optional"}} – show a dialog and return result
+
 - generate_image: {{"action": "generate_image", "prompt": "detailed description"}} – create an AI image using tgpt with arta provider
 
 - reply: {{"action": "reply", "response": "text to speak"}} – for general conversation, greetings, questions about yourself, etc.
@@ -94,6 +97,10 @@ Examples:
 - User: "What's my WiFi info?" -> {{"action": "get_wifi_info"}}
 - User: "Scan for WiFi networks" -> {{"action": "scan_wifi"}}
 - User: "Turn on WiFi" -> {{"action": "wifi_enable"}}
+
+- User: "Show a toast saying hello" -> {{"action": "show_toast", "text": "hello"}}
+- User: "Show a confirmation dialog" -> {{"action": "show_dialog", "dialog_type": "confirm", "title": "Are you sure?"}}
+- User: "Ask for text input" -> {{"action": "show_dialog", "dialog_type": "text", "title": "Enter your name", "hint": "Type here"}}
 
 Context: {context}
 User input: "{user_input}"

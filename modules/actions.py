@@ -623,6 +623,53 @@ def list_contacts(limit=20):
         speak("Failed to list contacts.")
 
 # -------------------------------------------------------------------
+# Toast and Dialog actions (NEW)
+# -------------------------------------------------------------------
+def show_toast(text):
+    """Show a transient popup notification."""
+    try:
+        subprocess.run(["termux-toast", text], check=True)
+        print(f"Toast shown: {text}")
+        # No speak feedback (toast is visual)
+    except Exception as e:
+        print(f"Error showing toast: {e}")
+        speak("Failed to show toast.")
+
+def show_dialog(dialog_type="confirm", title=None, hint=None):
+    """
+    Show a Termux dialog.
+    :param dialog_type: "confirm", "text", "radio", "checkbox", "spinner", "date", "time", "counter"
+    :param title: Dialog title (optional)
+    :param hint: Hint for text input (optional)
+    """
+    try:
+        cmd = ["termux-dialog", dialog_type]
+        if title:
+            cmd.extend(["-t", title])
+        if hint and dialog_type == "text":
+            cmd.extend(["-i", hint])
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        print("Dialog result:")
+        print(result.stdout)
+        # Try to parse JSON and speak a summary
+        data = json.loads(result.stdout)
+        if data.get('code') == 0:
+            if dialog_type == "confirm":
+                value = data.get('text') == "yes"
+                speak(f"User confirmed: {value}")
+            elif dialog_type == "text":
+                value = data.get('text', '')
+                speak(f"User entered: {value}")
+            else:
+                speak("Dialog completed.")
+        else:
+            speak("Dialog cancelled.")
+    except Exception as e:
+        print(f"Error showing dialog: {e}")
+        speak("Failed to show dialog.")
+
+# -------------------------------------------------------------------
 # Image generation action (updated to auto-answer 'y')
 # -------------------------------------------------------------------
 def generate_image(prompt):
@@ -783,6 +830,15 @@ def execute_action(decision):
     elif action == 'list_contacts':
         limit = decision.get('limit', 20)
         list_contacts(limit)
+    # New actions
+    elif action == 'show_toast':
+        show_toast(decision.get('text'))
+    elif action == 'show_dialog':
+        show_dialog(
+            decision.get('dialog_type', 'confirm'),
+            decision.get('title'),
+            decision.get('hint')
+        )
     elif action == 'reply':
         reply(decision.get('response'))
     elif action == 'list_providers':
