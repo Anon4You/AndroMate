@@ -1,8 +1,9 @@
-# utils.py
+# modules/utils.py
 import re
 import time
 import subprocess
 from difflib import SequenceMatcher
+from shared import speaking
 
 def clean_name(name):
     """Remove emojis and non‑printable characters from a name."""
@@ -28,6 +29,11 @@ class RateLimiter:
 def speak(text):
     """Speak text using termux-tts-speak. Fallback to print if unavailable."""
     try:
+        speaking.set(True)
         subprocess.run(["termux-tts-speak", text], check=True, timeout=20)
+        # Small delay to let any echo settle before re-enabling listening
+        time.sleep(0.5)
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         print(f"[TTS would say] {text}")
+    finally:
+        speaking.set(False)

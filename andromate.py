@@ -24,8 +24,11 @@ def main():
         elif sys.argv[1] == "web":
             from web_dashboard import run_web
             run_web(host='127.0.0.1', port=5000, debug=False)
+        elif sys.argv[1] == "wake":
+            from wake_word import run_wake_detector
+            run_wake_detector()
         else:
-            print("Usage: andromate [voice|cli|telegram|web]")
+            print("Usage: andromate [voice|cli|telegram|web|wake]")
     else:
         from main import main as background_main
         background_main()

@@ -34,6 +34,7 @@
 - [💻 Usage](#-usage)
 - [🌐 Web Dashboard](#-web-dashboard)
 - [📱 Remote Control via Telegram](#-remote-control-via-telegram)
+- [🔊 Wake Word Activation](#-wake-word-activation)
 - [⚙️ Configuration](#️-configuration)
 - [🧩 Project Structure](#-project-structure)
 - [🤝 Contributing](CONTRIBUTING.md)
@@ -67,8 +68,14 @@
 
 ### 🌐 Remote Control & Interfaces
 - **Web Dashboard:** Monitor and control AndroMate via a local web interface (`http://127.0.0.1:5000`).
-- **Telegram Bot:** Control your device from anywhere in the world via a Telegram bot. Execute commands, send messages, or check system status remotely.
+- **Telegram Bot:** Control your device from anywhere in the world via a Telegram bot.
 - **Enhanced CLI:** Colored output for better readability and persistent command history saved in `~/.andromate/`.
+
+### 🔊 Wake Word Activation
+- **True Hands‑Free:** Say a wake word like *"Hey AndroMate"* to activate voice recognition.
+- **Continuous Background Listening:** The assistant listens in the background (using `speech_recognition`) and only responds after hearing the wake word.
+- **Fuzzy Matching:** Tolerates slight mispronunciations (e.g., "Hey Android" will also trigger).
+- **Echo Prevention:** Automatically ignores its own speech, so it never wakes itself up.
 
 ### 🎨 Advanced Capabilities
 - **Image Generation:** Create AI art using `tgpt` (e.g., "Generate a cyberpunk cat").
@@ -87,15 +94,18 @@ Ensure the following dependencies are installed in your Termux environment.
 | `termux-api` | API interface package | `pkg install termux-api` |
 | `tgpt` | Local AI/Image generation backend | `pkg install tgpt` |
 | `tmux` | Terminal multiplexer for background sessions | `pkg install tmux` |
+| `flac` | Required for `speech_recognition` (wake word) | `pkg install flac` |
 
-> **Note:** `ffmpeg` and `flac` are no longer required as the voice system now uses native Termux speech recognition.
+> [!NOTE]
+> `ffmpeg` is no longer required as the voice system now uses native Termux speech recognition.
 
 ### Python Libraries
 ```bash
 pip install requests SpeechRecognition colorama flask telebot
 ```
 
-> ⚠️ **Permission Grant:** After installing the Termux:API app, run commands like `termux-speech-to-text` or `termux-sms-send` once manually to grant necessary Android permissions.
+> [!WARNING]
+> After installing the Termux:API app, run commands like `termux-speech-to-text` or `termux-sms-send` once manually to grant necessary Android permissions.
 
 ---
 
@@ -127,6 +137,7 @@ AndroMate offers multiple operational modes:
 | Mode | Command | Description |
 | :--- | :--- | :--- |
 | **Voice** | `python andromate.py voice` | Listens using native `termux-speech-to-text`, executes commands instantly. |
+| **Wake Word** | `python andromate.py wake` | Continuously listens for wake word; when detected, captures and executes voice commands. |
 | **CLI** | `python andromate.py cli` | Interactive shell with colored output and saved history. |
 | **Web** | `python andromate.py web` | Launches the Flask Web Dashboard. |
 | **Telegram** | `python andromate.py telegram` | Starts the Telegram bot for remote control. |
@@ -177,18 +188,41 @@ Control your Android device from anywhere using a Telegram bot.
 
 Now any command you send to the bot will be executed on your device (only your chat ID is allowed).
 
-### 🗲 Keeping It Running in Background
-The bot will stop if you close the Termux session. To keep it running in the background, use `tmux`:
+> [!TIP]
+> The bot will stop if you close the Termux session. To keep it running in the background, use `tmux`:
+> ```bash
+> tmux new -s andromate
+> python andromate.py telegram
+> # Detach with Ctrl+B, then press D
+> # Reattach later: tmux attach -t andromate
+> ```
+
+---
+
+## 🔊 Wake Word Activation
+
+To run the wake word detector continuously in the background:
 
 ```bash
-# Start a new detached session
-tmux new -s andromate
-python andromate.py telegram
-# Detach with Ctrl+B, then press D
-
-# Reattach later
-tmux attach -t andromate
+python andromate.py wake
 ```
+
+The assistant will start listening for your wake word (default: "Hey AndroMate", "Hey Android", etc.). Once detected, it will beep (say "Yes?") and listen for your command. It then processes the command and returns to listening mode.
+
+> [!TIP]
+> Use `tmux` to run the wake word listener in the background:
+> ```bash
+> tmux new -s andromate-wake
+> python andromate.py wake
+> # Detach with Ctrl+B, D
+> ```
+
+### 🛠️ Customizing Wake Words
+
+Edit the `WAKE_WORDS` list in `modules/wake_word.py` to add or change phrases. The system uses fuzzy matching, so slight mispronunciations are still recognised.
+
+> [!NOTE]
+> The detector pauses while the assistant is speaking, so it never reacts to its own voice (Echo Prevention).
 
 ---
 
@@ -197,6 +231,7 @@ tmux attach -t andromate
 Configuration settings are stored in `~/.andromate/config.json` (auto-generated on first run) or managed via voice commands.
 
 ### 📧 Email Setup (SMTP)
+
 To send emails, add your Gmail credentials to `~/.andromate/config.json`:
 
 ```json
@@ -206,9 +241,11 @@ To send emails, add your Gmail credentials to `~/.andromate/config.json`:
 }
 ```
 
-1. Enable 2FA on your Google account.
-2. Generate an **App Password** (use this instead of your regular password).
-3. The assistant will use this to send emails silently in the background.
+> [!CAUTION]
+> Never use your regular Google password.
+> 1. Enable 2FA on your Google account.
+> 2. Generate an **App Password** specifically for AndroMate.
+> 3. Use that 16-character password in the config.
 
 ### General Settings
 - **Switching Providers:**
@@ -238,9 +275,11 @@ AndroMate/
     ├── notifications.py  # Toast and Dialog handlers
     ├── prompt_manager.py # Dynamic AI prompt generation
     ├── providers.py      # API wrappers (OpenRouter, Pollinations, etc.)
+    ├── shared.py         # Thread‑safe flags (e.g., speaking state)
     ├── telegram_bot.py   # Telegram bot interface
     ├── utils.py          # Helpers (TTS, fuzzy matching, etc.)
     ├── voice.py          # Native termux-speech-to-text logic
+    ├── wake_word.py      # Continuous wake word detector
     └── web_dashboard.py  # Flask web interface backend
 ```
 
@@ -255,6 +294,7 @@ AndroMate is currently in **Active Development (Beta)**.
 - [x] Multi-provider support (Hot-swap)
 - [x] Telegram Remote Control
 - [x] Web Dashboard
+- [x] Wake Word Activation
 - [x] Enhanced Context Awareness
 
 We welcome contributions! Please see `CONTRIBUTING.md` for guidelines.
