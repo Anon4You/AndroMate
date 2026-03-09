@@ -3,6 +3,7 @@ import telebot
 import logging
 import io
 import sys
+import os
 import config
 from ai import ask_ai
 from actions import execute_action
@@ -57,8 +58,9 @@ def handle_message(message):
     new_stdout = io.StringIO()
     sys.stdout = new_stdout
 
+    result = None
     try:
-        execute_action(decision)
+        result = execute_action(decision)
     except Exception as e:
         logger.exception("Error executing action")
         bot.reply_to(message, f"❌ Error: {str(e)}")
@@ -66,8 +68,12 @@ def handle_message(message):
         sys.stdout = old_stdout
 
     output = new_stdout.getvalue()
-    if output.strip():
-        # Send the printed output back (escape Markdown)
+
+    # If the action generated an image, send it
+    if result and os.path.exists(result):
+        with open(result, 'rb') as photo:
+            bot.send_photo(message.chat.id, photo, caption="Here's your image!")
+    elif output.strip():
         bot.reply_to(message, f"```\n{output.strip()}\n```", parse_mode="MarkdownV2")
     else:
         bot.reply_to(message, "✅ Done.")

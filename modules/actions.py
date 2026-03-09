@@ -5,6 +5,8 @@ import urllib.parse
 import os
 import json
 import smtplib
+import requests
+import shutil
 from email.message import EmailMessage
 from datetime import datetime
 from contacts import match_contact, get_contacts
@@ -66,7 +68,7 @@ def send_notification(title, content):
         pass
 
 # -------------------------------------------------------------------
-# Existing actions (SMS, call, WhatsApp, Telegram, open_app, reply_notification, run_shell)
+# Existing actions (SMS, call, WhatsApp, Telegram, email, open_app, reply_notification, run_shell)
 # -------------------------------------------------------------------
 def send_sms(recipient_name, message):
     contact, score = match_contact(recipient_name)
@@ -260,6 +262,7 @@ def take_photo(filename=None, camera="back"):
     Take a photo using termux-camera-photo.
     :param filename: optional filename (auto-generated if None)
     :param camera: which camera to use - "back", "front", or camera ID ("0", "1")
+    :return: absolute path to the saved photo, or None on failure
     """
     if not filename:
         filename = get_timestamp_filename("photo", "jpg")
@@ -278,11 +281,14 @@ def take_photo(filename=None, camera="back"):
     try:
         # termux-camera-photo accepts -c for camera ID
         subprocess.run(["termux-camera-photo", "-c", camera_arg, filename], check=True)
-        print(f"Photo saved to {filename} using camera {camera_arg}")
+        abs_path = os.path.abspath(filename)
+        print(f"Photo saved to {abs_path} using camera {camera_arg}")
         speak("Photo taken")
+        return abs_path
     except Exception as e:
         print(f"Error taking photo: {e}")
         speak("Failed to take photo")
+        return None
 
 def toggle_torch(state, camera=None):
     """
@@ -675,14 +681,15 @@ def send_email_smtp(recipient, subject, body):
         speak("Failed to send email.")
 
 # -------------------------------------------------------------------
-# Image generation action (updated to auto-answer 'y')
+# Image generation action (tgpt saves locally, we find the file)
 # -------------------------------------------------------------------
 def generate_image(prompt):
-    """Generate an image using tgpt with arta provider."""
+    """Generate an image using tgpt with arta provider. Returns path to the saved image."""
     print(f"🎨 Generating image for: '{prompt}'")
     speak("Generating image. Please wait...")
     cmd = ["tgpt", "--provider", "arta", "--img", prompt]
     try:
+        # Answer "y" to let tgpt save the image
         result = subprocess.run(
             cmd,
             input="y\n",
@@ -693,25 +700,46 @@ def generate_image(prompt):
         if result.returncode != 0:
             print(f"❌ Error: {result.stderr}")
             speak("Image generation failed.")
-            return
+            return None
+
         output = result.stdout + result.stderr
+        # Look for "Image URL: ..."
         url_match = re.search(r'Image URL: (https?://[^\s]+)', output)
-        if url_match:
-            print(f"🔗 Image URL: {url_match.group(1)}")
-        save_match = re.search(r'saved to (.*\.(png|jpg|jpeg))', output, re.IGNORECASE)
-        if save_match:
-            filename = save_match.group(1)
-            print(f"✅ Image saved: {filename}")
-            speak(f"Image saved as {os.path.basename(filename)}")
-        else:
-            print("✅ Image generated. Check your Pictures folder.")
+        if not url_match:
+            print("❌ Could not find image URL in output.")
+            speak("Image generation failed.")
+            return None
+
+        image_url = url_match.group(1)
+        print(f"🔗 Image URL: {image_url}")
+
+        # Extract filename from URL (last part after '/')
+        filename = image_url.split('/')[-1]
+        if not filename:
+            print("❌ Could not extract filename from URL.")
+            speak("Image generation failed.")
+            return None
+
+        # Assume tgpt saved the file in the current directory with that name
+        local_path = os.path.join(os.getcwd(), filename)
+        if os.path.exists(local_path):
+            print(f"✅ Image saved to {local_path}")
             speak("Image generated.")
+            return local_path
+        else:
+            # Try to find any recently created image file? Not reliable.
+            print(f"❌ Expected file {local_path} not found.")
+            speak("Image file not found.")
+            return None
+
     except subprocess.TimeoutExpired:
         print("⏱️ Image generation timed out.")
         speak("Image generation timed out.")
+        return None
     except Exception as e:
         print(f"❌ Error: {e}")
         speak("An error occurred.")
+        return None
 
 # -------------------------------------------------------------------
 # Conversational reply action
@@ -783,7 +811,7 @@ def execute_action(decision):
     elif action == 'set_brightness':
         set_brightness(decision.get('level'))
     elif action == 'take_photo':
-        take_photo(decision.get('filename'), decision.get('camera', 'back'))
+        return take_photo(decision.get('filename'), decision.get('camera', 'back'))
     elif action == 'toggle_torch':
         toggle_torch(decision.get('state'), decision.get('camera'))
     elif action == 'get_location':
@@ -838,6 +866,8 @@ def execute_action(decision):
             decision.get('subject', ''),
             decision.get('message', '')
         )
+    elif action == 'generate_image':
+        return generate_image(decision.get('prompt'))
     elif action == 'reply':
         reply(decision.get('response'))
     elif action == 'list_providers':
@@ -846,10 +876,10 @@ def execute_action(decision):
         set_provider(decision.get('provider'))
     elif action == 'get_current_provider':
         get_current_provider()
-    elif action == 'generate_image':
-        generate_image(decision.get('prompt'))
     elif action == 'clipboard_action':
-        pass
+        pass  # handled in clipboard module
     else:
         print("No action taken.")
         speak("I didn't understand the action.")
+    # All other actions return None implicitly
+    return None

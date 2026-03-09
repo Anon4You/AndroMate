@@ -39,7 +39,7 @@
             </div>
             <div class="tip-box">
                 <i class="fas fa-lightbulb"></i>
-                <p><strong>Try:</strong> "battery level", "open YouTube", "take a selfie", "send email to ..."</p>
+                <p><strong>Try:</strong> "battery level", "open YouTube", "take a selfie", "send email to ...", "generate image of a cat"</p>
             </div>
         </div>
         <!-- Main chat area -->
@@ -96,6 +96,41 @@
             chat.scrollTop = chat.scrollHeight;
         }
 
+        // Helper to add an image message
+        function addImageMessage(imageUrl) {
+            console.log("Displaying image from URL:", imageUrl); // Debug log
+            const row = document.createElement('div');
+            row.className = 'message-row assistant';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar assistant';
+            avatar.innerHTML = '<i class="fas fa-robot"></i>';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble assistant';
+            
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.style.maxWidth = '100%';
+            img.style.borderRadius = '8px';
+            img.style.marginBottom = '4px';
+            img.onerror = () => {
+                console.error("Failed to load image:", imageUrl);
+                bubble.innerHTML += '<br><small style="color:red">Image failed to load</small>';
+            };
+            bubble.appendChild(img);
+            
+            const time = document.createElement('div');
+            time.className = 'timestamp';
+            time.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            bubble.appendChild(time);
+
+            row.appendChild(avatar);
+            row.appendChild(bubble);
+            chat.appendChild(row);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
         // Initial welcome message
         addMessage('assistant', 'Hello! I\'m **AndroMate**. How can I assist you today?');
 
@@ -116,13 +151,24 @@
                     body: JSON.stringify({ command: cmd })
                 });
                 const data = await response.json();
+                console.log("Response data:", data); // Debug log
                 if (data.error) {
                     addMessage('assistant', `❌ Error: ${data.error}`, true);
                 } else {
-                    const output = data.output.trim() || '✅ Done.';
-                    addMessage('assistant', output);
+                    // If there's an image, display it
+                    if (data.image) {
+                        addImageMessage(data.image);
+                    }
+                    const output = data.output.trim();
+                    if (output) {
+                        addMessage('assistant', output);
+                    } else if (!data.image) {
+                        // No output and no image, just a confirmation
+                        addMessage('assistant', '✅ Done.');
+                    }
                 }
             } catch (e) {
+                console.error("Fetch error:", e);
                 addMessage('assistant', `Network error: ${e.message}`, true);
             } finally {
                 commandInput.disabled = false;
