@@ -146,7 +146,7 @@ AndroMate offers multiple operational modes:
 ### 🗣️ Example Commands
 
 **Messaging & Calls**
-> "Send an email to John saying I'll be late."
+> "Send an SMS to John saying I'll be late."
 > "Show all contacts."
 
 **System & Utilities**
