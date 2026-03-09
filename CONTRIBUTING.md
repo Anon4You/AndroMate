@@ -63,19 +63,19 @@ Enhancement suggestions are tracked as GitHub Issues. When suggesting an enhance
 
 2.  **Install Dependencies:**
     Ensure you have the prerequisites listed in the [README](README.md#requirements) installed.
-    
-    > [!NOTE]
-    > `ffmpeg` is no longer required, but `flac` is necessary for the Wake Word feature.
+
+> [!NOTE]
+> `ffmpeg` is no longer required, but `flac` is necessary for the Wake Word feature.
 
     ```bash
     pkg install python termux-api tgpt tmux flac
     pip install requests SpeechRecognition colorama flask telebot
     ```
 
-3.  **Configuration (Optional):**
+4.  **Configuration (Optional):**
     If you are testing specific features like Email or Telegram, you will need to set up your `~/.andromate/config.json` or API keys as described in the README.
 
-4.  **Testing:**
+5.  **Testing:**
     There is currently no automated test suite. Testing is done manually by running the assistant in different modes:
     ```bash
     # Test core logic
