@@ -40,7 +40,7 @@ Possible actions and their required JSON keys:
 - set_volume: {{"action": "set_volume", "stream": "music/call/system/notification/alarm", "level": 0-100}}
 - get_wifi_info: {{"action": "get_wifi_info"}} – get current WiFi connection details
 - scan_wifi: {{"action": "scan_wifi"}} – scan for available WiFi networks
-- wifi_enable: {{"action": "wifi_enable"}} – turn on WiFi
+- wifi_enable: {{"action": "wifi_enable", "state": "on/off"}} – turn WiFi on or off (e.g., "on", "off")
 - download_file: {{"action": "download_file", "url": "http://...", "destination": "optional path"}}
 - set_wallpaper: {{"action": "set_wallpaper", "image_path": "path/to/image.jpg"}}
 - get_device_info: {{"action": "get_device_info"}}
@@ -116,7 +116,8 @@ Examples:
 --- WiFi ---
 - User: "What's my WiFi info?" -> {{"action": "get_wifi_info"}}
 - User: "Scan for WiFi networks" -> {{"action": "scan_wifi"}}
-- User: "Turn on WiFi" -> {{"action": "wifi_enable"}}
+- User: "Turn on WiFi" -> {{"action": "wifi_enable", "state": "on"}}
+- User: "Turn off WiFi" -> {{"action": "wifi_enable", "state": "off"}}
 
 --- Battery & Device Info ---
 - User: "Battery level?" -> {{"action": "get_battery"}}

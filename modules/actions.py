@@ -400,15 +400,33 @@ def scan_wifi():
         print(f"Error scanning WiFi: {e}")
         speak("Failed to scan WiFi")
 
-def wifi_enable():
-    """Enable WiFi using termux-wifi-enable."""
+def wifi_enable(state=None):
+    """
+    Enable or disable WiFi using termux-wifi-enable.
+    :param state: "on"/"true" to enable, "off"/"false" to disable. If None, defaults to "true" (enable).
+    """
+    if state is None:
+        # Default to enable for backward compatibility
+        cmd_state = "true"
+        action_word = "on"
+    elif state.lower() in ("on", "true", "1", "enable"):
+        cmd_state = "true"
+        action_word = "on"
+    elif state.lower() in ("off", "false", "0", "disable"):
+        cmd_state = "false"
+        action_word = "off"
+    else:
+        print(f"Invalid WiFi state: {state}. Use 'on' or 'off'.")
+        speak("Invalid WiFi state. Please say turn WiFi on or off.")
+        return
+
     try:
-        subprocess.run(["termux-wifi-enable"], check=True)
-        print("WiFi enabled")
-        speak("WiFi turned on")
+        subprocess.run(["termux-wifi-enable", cmd_state], check=True)
+        print(f"WiFi turned {action_word}")
+        speak(f"WiFi turned {action_word}")
     except Exception as e:
-        print(f"Error enabling WiFi: {e}")
-        speak("Failed to enable WiFi")
+        print(f"Error toggling WiFi: {e}")
+        speak("Failed to toggle WiFi")
 
 def download_file(url, destination=None):
     cmd = ["termux-download", url]
@@ -727,7 +745,6 @@ def generate_image(prompt):
             speak("Image generated.")
             return local_path
         else:
-            # Try to find any recently created image file? Not reliable.
             print(f"❌ Expected file {local_path} not found.")
             speak("Image file not found.")
             return None
@@ -831,7 +848,7 @@ def execute_action(decision):
     elif action == 'scan_wifi':
         scan_wifi()
     elif action == 'wifi_enable':
-        wifi_enable()
+        wifi_enable(decision.get('state'))
     elif action == 'download_file':
         download_file(decision.get('url'), decision.get('destination'))
     elif action == 'set_wallpaper':
