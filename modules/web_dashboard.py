@@ -56,7 +56,7 @@ def handle_command():
     result = None
     try:
         decision = ask_ai(user_input, context="web")
-        result = execute_action(decision)
+        result = execute_action(decision, context="web")
     except Exception as e:
         error = str(e)
         trace = traceback.format_exc()

@@ -117,13 +117,30 @@ pip install requests SpeechRecognition colorama flask telebot
    cd AndroMate
    ```
 
-2. **Configure API Keys (Optional)**
+2. **Run the Installation Script**
+   ```bash
+   bash install.sh
+   ```
+   This will automatically install all required packages:
+   - System packages: `python`, `tmux`, `termux-api`, `flac`, `portaudio`, `tgpt`
+   - Python packages: `requests`, `SpeechRecognition`, `colorama`, `flask`, `pytelegrambot`, `pyaudio`
+
+3. **Grant Permissions**
+   After installation, grant necessary Android permissions:
+   ```bash
+   termux-microphone-record    # For voice commands
+   termux-sms-list             # For SMS features
+   termux-call-log             # For call logs
+   termux-location             # For location services
+   ```
+
+4. **Configure API Keys (Optional)**
    Required only for OpenRouter or OpenAI providers. Pollinations works out-of-the-box.
    ```bash
    echo "your-openrouter-api-key" > ~/.openrouter_key
    ```
 
-3. **Run the Assistant**
+5. **Run the Assistant**
    ```bash
    python andromate.py voice
    ```

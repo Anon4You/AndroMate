@@ -123,8 +123,8 @@ class ContinuousWakeWordDetector:
 
     def _process_command(self, text):
         print(f"🗣️ Command: {text}")
-        decision = ask_ai(text, context="wake")
-        execute_action(decision)
+        decision = ask_ai(text, context="wake_word")
+        execute_action(decision, context="wake_word")
 
 def run_wake_detector():
     detector = ContinuousWakeWordDetector()

@@ -57,7 +57,7 @@ def run_cli():
             print_colored("─" * 50, Fore.BLACK, Style.DIM)
 
             # Execute the action (this will print/speak confirmations)
-            execute_action(decision)
+            execute_action(decision, context="cli")
 
             # Print a separator after the response for clarity
             print_colored("─" * 50 + "\n", Fore.BLACK, Style.DIM)
