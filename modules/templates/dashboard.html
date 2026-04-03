@@ -50,23 +50,72 @@
                     <span class="status-dot" title="Online"></span>
                 </div>
                 <div class="chat-header-actions">
+                    <button class="header-btn" onclick="toggleSearch()" title="Search messages"><i class="fas fa-search"></i></button>
+                    <button class="header-btn" onclick="exportChat()" title="Export chat"><i class="fas fa-download"></i></button>
+                    <button class="header-btn" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon" id="themeIcon"></i></button>
                     <button class="header-btn" onclick="clearChat()" title="Clear chat"><i class="fas fa-trash"></i></button>
-                    <button class="header-btn" onclick="window.scrollTo(0,0)" title="Settings"><i class="fas fa-cog"></i></button>
+                    <button class="header-btn" onclick="toggleSettings()" title="Settings"><i class="fas fa-cog"></i></button>
                 </div>
             </div>
 
+            <!-- Search bar -->
+            <div class="search-bar" id="searchBar" style="display: none;">
+                <input type="text" id="searchInput" placeholder="Search messages..." onkeyup="searchMessages()">
+                <button onclick="toggleSearch()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Messages container -->
             <div class="messages-container" id="chat">
                 <!-- Messages inserted via JS -->
+            </div>
+
+            <!-- Settings panel -->
+            <div class="settings-panel" id="settingsPanel">
+                <div class="settings-header">
+                    <h4>Settings</h4>
+                    <button onclick="toggleSettings()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="settings-content">
+                    <div class="setting-item">
+                        <label>Auto-scroll to new messages</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="autoScrollToggle" checked onchange="saveSettings()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Save chat history</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="saveHistoryToggle" checked onchange="saveSettings()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Enter key sends message</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="enterKeyToggle" checked onchange="saveSettings()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-actions">
+                        <button onclick="importChat()" class="settings-btn"><i class="fas fa-upload"></i> Import Chat</button>
+                        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleImport(event)">
+                    </div>
+                </div>
             </div>
 
             <div class="input-area">
                 <div class="input-wrapper">
                     <input type="text" id="command" placeholder="Type a message..." autofocus>
+                    <button class="attach-btn" title="Attach file"><i class="fas fa-paperclip"></i></button>
                     <button id="sendBtn"><i class="fas fa-arrow-up"></i></button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
 
     <script>
         const chat = document.getElementById('chat');
@@ -74,12 +123,105 @@
         const sendBtn = document.getElementById('sendBtn');
         const batterySpan = document.getElementById('batteryValue');
         const wifiSpan = document.getElementById('wifiValue');
+        const themeIcon = document.getElementById('themeIcon');
         let isTyping = false;
+        let messageHistory = [];
+        let autoScroll = true;
+        let saveHistory = true;
+        let enterKeyEnabled = true;
+        let isDarkTheme = true;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            loadChatHistory();
+            applyTheme();
+        });
+
+        // Load settings from localStorage
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('andromate_settings') || '{}');
+            autoScroll = settings.autoScroll !== false;
+            saveHistory = settings.saveHistory !== false;
+            enterKeyEnabled = settings.enterKey !== false;
+            isDarkTheme = settings.darkTheme !== false;
+
+            document.getElementById('autoScrollToggle').checked = autoScroll;
+            document.getElementById('saveHistoryToggle').checked = saveHistory;
+            document.getElementById('enterKeyToggle').checked = enterKeyEnabled;
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            autoScroll = document.getElementById('autoScrollToggle').checked;
+            saveHistory = document.getElementById('saveHistoryToggle').checked;
+            enterKeyEnabled = document.getElementById('enterKeyToggle').checked;
+
+            localStorage.setItem('andromate_settings', JSON.stringify({
+                autoScroll,
+                saveHistory,
+                enterKey: enterKeyEnabled,
+                darkTheme: isDarkTheme
+            }));
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            themeIcon.className = isDarkTheme ? 'fas fa-moon' : 'fas fa-sun';
+            document.body.classList.toggle('light-theme', !isDarkTheme);
+            saveSettings();
+        }
+
+        // Apply theme
+        function applyTheme() {
+            themeIcon.className = isDarkTheme ? 'fas fa-moon' : 'fas fa-sun';
+            document.body.classList.toggle('light-theme', !isDarkTheme);
+        }
+
+        // Toggle settings panel
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('open');
+        }
+
+        // Toggle search
+        function toggleSearch() {
+            const searchBar = document.getElementById('searchBar');
+            searchBar.style.display = searchBar.style.display === 'none' ? 'flex' : 'none';
+            if (searchBar.style.display === 'flex') {
+                document.getElementById('searchInput').focus();
+            }
+        }
+
+        // Search messages
+        function searchMessages() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const messages = chat.querySelectorAll('.message-row');
+
+            messages.forEach(msg => {
+                const text = msg.querySelector('.bubble').textContent.toLowerCase();
+                if (query === '' || text.includes(query)) {
+                    msg.style.display = 'flex';
+                } else {
+                    msg.style.display = 'none';
+                }
+            });
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
 
         // Add message to chat
-        function addMessage(sender, text, isError = false) {
+        function addMessage(sender, text, isError = false, saveToHistory = true) {
             const row = document.createElement('div');
             row.className = `message-row ${sender}`;
+            row.dataset.timestamp = Date.now();
 
             const avatar = document.createElement('div');
             avatar.className = `avatar ${sender}`;
@@ -88,13 +230,19 @@
             const bubble = document.createElement('div');
             bubble.className = `bubble ${sender}${isError ? ' error' : ''}`;
 
-            // Parse markdown-like syntax
-            let formattedText = text
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                .replace(/`(.+?)`/g, '<code style="background:rgba(99,102,241,0.2);padding:2px 6px;border-radius:4px;">$1</code>')
-                .replace(/\n/g, '<br>');
-            bubble.innerHTML = formattedText;
+            // Add message actions
+            const actions = document.createElement('div');
+            actions.className = 'message-actions';
+            actions.innerHTML = `
+                <button class="action-btn" onclick="copyMessage(this)" title="Copy"><i class="fas fa-copy"></i></button>
+                <button class="action-btn" onclick="editMessage(this)" title="Edit"><i class="fas fa-edit"></i></button>
+                <button class="action-btn" onclick="deleteMessage(this)" title="Delete"><i class="fas fa-trash"></i></button>
+            `;
+            bubble.appendChild(actions);
+
+            // Parse markdown with code block support
+            const parsedContent = parseMarkdown(text);
+            bubble.appendChild(parsedContent);
 
             const time = document.createElement('div');
             time.className = 'timestamp';
@@ -109,13 +257,167 @@
                 row.appendChild(avatar);
             }
             chat.appendChild(row);
-            chat.scrollTop = chat.scrollHeight;
+
+            if (autoScroll) {
+                chat.scrollTop = chat.scrollHeight;
+            }
+
+            // Save to history
+            if (saveHistory && saveToHistory) {
+                messageHistory.push({ sender, text, isError, timestamp: Date.now() });
+                localStorage.setItem('andromate_history', JSON.stringify(messageHistory));
+            }
+
+            return row;
+        }
+
+        // Copy message text
+        function copyMessage(btn) {
+            const bubble = btn.closest('.bubble');
+            const markdownContent = bubble.querySelector('.markdown-content');
+            const text = markdownContent ? markdownContent.textContent : bubble.textContent;
+            // Remove timestamp and actions from text
+            const cleanText = text.replace(/[\u200b]/g, '').trim();
+
+            navigator.clipboard.writeText(cleanText).then(() => {
+                showToast('Message copied!', 'success');
+            }).catch(err => {
+                showToast('Failed to copy', 'error');
+            });
+        }
+
+        // Edit message (resend)
+        function editMessage(btn) {
+            const bubble = btn.closest('.bubble');
+            const markdownContent = bubble.querySelector('.markdown-content');
+            const text = markdownContent ? markdownContent.textContent : bubble.textContent;
+            const cleanText = text.replace(/[\u200b]/g, '').trim();
+
+            commandInput.value = cleanText;
+            commandInput.focus();
+
+            // Delete the original message
+            deleteMessage(btn);
+        }
+
+        // Delete message
+        function deleteMessage(btn) {
+            const row = btn.closest('.message-row');
+
+            // Remove from history
+            const timestamp = parseInt(row.dataset.timestamp);
+            const index = messageHistory.findIndex(m => m.timestamp === timestamp);
+            if (index !== -1) {
+                messageHistory.splice(index, 1);
+                localStorage.setItem('andromate_history', JSON.stringify(messageHistory));
+            }
+
+            row.remove();
+            showToast('Message deleted', 'info');
+        }
+
+        // Parse markdown text into DOM nodes
+        function parseMarkdown(text) {
+            const container = document.createElement('div');
+            container.className = 'markdown-content';
+
+            // Split by code blocks first
+            const parts = text.split(/(```[\s\S]*?```)/g);
+
+            parts.forEach(part => {
+                if (part.startsWith('```') && part.endsWith('```')) {
+                    const codeBlock = createCodeBlock(part);
+                    container.appendChild(codeBlock);
+                } else {
+                    const textBlock = parseInlineMarkdown(part);
+                    if (textBlock.childNodes.length > 0) {
+                        container.appendChild(textBlock);
+                    }
+                }
+            });
+
+            return container;
+        }
+
+        // Create code block element with copy button
+        function createCodeBlock(codeText) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-block-wrapper';
+
+            const match = codeText.match(/^```(\w*)\n([\s\S]*?)```$/);
+            const language = match && match[1] ? match[1] : 'code';
+            const code = match && match[2] ? match[2].trim() : codeText.replace(/^```|```$/g, '').trim();
+
+            const header = document.createElement('div');
+            header.className = 'code-block-header';
+
+            const langSpan = document.createElement('span');
+            langSpan.className = 'code-language';
+            langSpan.textContent = language;
+            header.appendChild(langSpan);
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-code-btn';
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy code';
+            copyBtn.onclick = () => copyCode(code, copyBtn);
+            header.appendChild(copyBtn);
+
+            const pre = document.createElement('pre');
+            const codeEl = document.createElement('code');
+            codeEl.className = `language-${language}`;
+            codeEl.textContent = code;
+            pre.appendChild(codeEl);
+
+            wrapper.appendChild(header);
+            wrapper.appendChild(pre);
+
+            return wrapper;
+        }
+
+        // Copy code to clipboard
+        function copyCode(code, btn) {
+            navigator.clipboard.writeText(code).then(() => {
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.classList.add('copied');
+                showToast('Code copied!', 'success');
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                btn.innerHTML = '<i class="fas fa-times"></i> Failed';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy code';
+                }, 2000);
+            });
+        }
+
+        // Parse inline markdown
+        function parseInlineMarkdown(text) {
+            const container = document.createElement('div');
+            if (!text.trim()) return container;
+
+            let html = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+                .replace(/\n/g, '<br>');
+
+            container.innerHTML = html;
+            return container;
         }
 
         // Add image message
         function addImageMessage(imageUrl) {
             const row = document.createElement('div');
             row.className = 'message-row assistant';
+            row.dataset.timestamp = Date.now();
 
             const avatar = document.createElement('div');
             avatar.className = 'avatar assistant';
@@ -142,7 +444,10 @@
             row.appendChild(avatar);
             row.appendChild(bubble);
             chat.appendChild(row);
-            chat.scrollTop = chat.scrollHeight;
+
+            if (autoScroll) {
+                chat.scrollTop = chat.scrollHeight;
+            }
         }
 
         // Show typing indicator
@@ -165,7 +470,9 @@
             row.appendChild(avatar);
             row.appendChild(indicator);
             chat.appendChild(row);
-            chat.scrollTop = chat.scrollHeight;
+            if (autoScroll) {
+                chat.scrollTop = chat.scrollHeight;
+            }
         }
 
         // Remove typing indicator
@@ -177,12 +484,86 @@
 
         // Clear chat
         function clearChat() {
-            chat.innerHTML = '';
-            addMessage('assistant', 'Chat cleared. How can I help you?');
+            if (confirm('Are you sure you want to clear the chat history?')) {
+                chat.innerHTML = '';
+                messageHistory = [];
+                if (saveHistory) {
+                    localStorage.setItem('andromate_history', JSON.stringify(messageHistory));
+                }
+                addMessage('assistant', 'Chat cleared. How can I help you?', false, false);
+                showToast('Chat cleared', 'info');
+            }
         }
 
-        // Initial welcome
-        addMessage('assistant', 'Hello! I\'m **AndroMate**. How can I assist you today?');
+        // Load chat history from localStorage
+        function loadChatHistory() {
+            if (!saveHistory) return;
+
+            const saved = localStorage.getItem('andromate_history');
+            if (saved) {
+                try {
+                    messageHistory = JSON.parse(saved);
+                    messageHistory.forEach(msg => {
+                        addMessage(msg.sender, msg.text, msg.isError, false);
+                    });
+                } catch (e) {
+                    console.error('Failed to load history:', e);
+                }
+            }
+
+            if (messageHistory.length === 0) {
+                addMessage('assistant', 'Hello! I\'m **AndroMate**. How can I assist you today?', false, false);
+            }
+        }
+
+        // Export chat as JSON
+        function exportChat() {
+            const data = {
+                exportDate: new Date().toISOString(),
+                messages: messageHistory
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `andromate-chat-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Chat exported!', 'success');
+        }
+
+        // Import chat
+        function importChat() {
+            document.getElementById('importFile').click();
+        }
+
+        // Handle import file
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.messages && Array.isArray(data.messages)) {
+                        chat.innerHTML = '';
+                        messageHistory = [];
+                        data.messages.forEach(msg => {
+                            addMessage(msg.sender, msg.text, msg.isError, true);
+                        });
+                        localStorage.setItem('andromate_history', JSON.stringify(messageHistory));
+                        showToast('Chat imported!', 'success');
+                    } else {
+                        showToast('Invalid chat file', 'error');
+                    }
+                } catch (err) {
+                    showToast('Failed to import chat', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
 
         // Send command
         async function sendCommand() {
@@ -253,7 +634,7 @@
 
         sendBtn.addEventListener('click', sendCommand);
         commandInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendCommand();
+            if (e.key === 'Enter' && enterKeyEnabled) sendCommand();
         });
 
         updateStatus();
