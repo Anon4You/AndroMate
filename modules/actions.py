@@ -805,9 +805,30 @@ def get_current_provider():
     speak(msg)
 
 # -------------------------------------------------------------------
+# Voice output control
+# -------------------------------------------------------------------
+# Set this to True only for voice/wake_word contexts
+_voice_enabled = False
+
+def set_voice_output(enabled):
+    """Enable or disable voice output for action execution."""
+    global _voice_enabled
+    _voice_enabled = enabled
+
+def is_voice_enabled():
+    """Check if voice output is currently enabled."""
+    return _voice_enabled
+
+# -------------------------------------------------------------------
 # Main dispatcher
 # -------------------------------------------------------------------
-def execute_action(decision):
+def execute_action(decision, context=None):
+    # Enable voice output only for voice or wake_word contexts
+    if context in ('voice', 'wake_word'):
+        set_voice_output(True)
+    else:
+        set_voice_output(False)
+
     action = decision.get('action')
     if action == 'send_sms':
         send_sms(decision.get('recipient'), decision.get('message'))

@@ -71,7 +71,7 @@ def handle_voice_command():
     if text:
         print(f"Recognized: {text}")
         decision = ask_ai(text, context="voice")
-        execute_action(decision)
+        execute_action(decision, context="voice")
     else:
         print("Voice command failed or was cancelled.")
         speak("Sorry, I didn't catch that.")

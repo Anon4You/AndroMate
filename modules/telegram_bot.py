@@ -60,7 +60,7 @@ def handle_message(message):
 
     result = None
     try:
-        result = execute_action(decision)
+        result = execute_action(decision, context="telegram")
     except Exception as e:
         logger.exception("Error executing action")
         bot.reply_to(message, f"❌ Error: {str(e)}")
