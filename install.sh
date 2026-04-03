@@ -60,7 +60,7 @@ fi
 
 # Install Python packages
 print_status "Installing Python packages..."
-pip install requests SpeechRecognition colorama flask pytelegrambot pyaudio
+pip install requests SpeechRecognition colorama flask telebot pyaudio
 
 # Create necessary directories
 print_status "Creating configuration directories..."
