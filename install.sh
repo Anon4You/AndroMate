@@ -42,15 +42,15 @@ fi
 
 # Update package lists
 print_status "Updating package lists..."
-pkg update -y
+apt update -y
 
 # Install system packages
 print_status "Installing system packages..."
-pkg install -y python tmux termux-api flac portaudio
+apt install -y python tmux termux-api flac portaudio
 
 # Install tgpt (AI tool)
 print_status "Installing tgpt..."
-pkg install -y tgpt
+apt install -y tgpt
 
 # Check if pip is available
 if ! command -v pip &> /dev/null; then
@@ -115,3 +115,4 @@ echo "   - python -m modules.wake_word  (wake word detection)"
 echo ""
 print_status "For help, check README.md or CONTRIBUTING.md"
 echo ""
+
