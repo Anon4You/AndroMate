@@ -21,6 +21,8 @@ def ask_ai(text, context="general"):
     Send user input to selected AI provider and return structured action.
     Includes conversation history in the prompt.
     """
+    import re
+
     # Add user message to memory
     memory.add_user_message(text)
 
@@ -42,20 +44,86 @@ def ask_ai(text, context="general"):
             return {"action": "none"}
         content = provider_func(prompt)
 
-        # Extract JSON from response
-        start = content.find('{')
-        end = content.rfind('}') + 1
-        if start != -1 and end > start:
-            json_str = content[start:end]
-            decision = json.loads(json_str)
+        # Try multiple JSON extraction methods
+        decision = extract_json_from_response(content)
 
+        if decision:
             # If the action is 'reply', add assistant response to memory
             if decision.get('action') == 'reply':
                 memory.add_assistant_message(decision.get('response', ''))
             return decision
         else:
+            # If no JSON found, create a write_file action for coding tasks
+            coding_keywords = ['code', 'program', 'script', 'write', 'create', 'function', 'class', 'loop', 'for', 'while', 'def']
+            is_coding_request = any(kw in text.lower() for kw in coding_keywords) or context == 'coding'
+
+            if is_coding_request:
+                print(f"AI returned natural language, treating as code request")
+                # Generate a filename and try to extract code blocks
+                code_match = re.search(r'```(?:python)?\s*(.*?)```', content, re.DOTALL)
+                if code_match:
+                    code_content = code_match.group(1).strip()
+                    print(f"Extracted code from markdown block ({len(code_content)} chars)")
+                else:
+                    # If no code block, the entire response might be code or explanation
+                    # Check if it looks like Python code
+                    code_indicators = ['print(', 'def ', 'class ', 'for ', 'while ', 'if ', 'import ', 'return ']
+                    if any(ind in content for ind in code_indicators):
+                        code_content = content.strip()
+                        print(f"Treating response as Python code ({len(code_content)} chars)")
+                    else:
+                        # It's an explanation, wrap it in a simple example
+                        print(f"AI gave explanation, creating example based on: {content[:80]}...")
+                        code_content = f"# Generated code\nprint(\"Hello from AndroMate\")\n{content.strip()}"
+
+                return {
+                    "action": "write_file",
+                    "file_path": "generated_code.py",
+                    "content": code_content
+                }
+
             print("No JSON found in response.")
-            return {"action": "none"}
+            return {"action": "reply", "response": content}
     except Exception as e:
         error_handler.log_error(e, f"AI call failed with provider {config.AI_PROVIDER}", notify_user=True)
         return {"action": "none"}
+
+def extract_json_from_response(content):
+    """Extract JSON from AI response using multiple strategies."""
+    import re
+
+    # Strategy 1: Find JSON between braces
+    start = content.find('{')
+    end = content.rfind('}') + 1
+    if start != -1 and end > start:
+        json_str = content[start:end]
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            pass
+
+    # Strategy 2: Look for JSON pattern with action field
+    json_pattern = r'\{\s*"action"\s*:\s*"[^"]+"\s*[^}]*\}'
+    matches = re.findall(json_pattern, content, re.DOTALL)
+    for match in matches:
+        try:
+            return json.loads(match)
+        except json.JSONDecodeError:
+            pass
+
+    # Strategy 3: Try to fix common JSON issues and parse
+    # Remove markdown code blocks if present
+    content_clean = re.sub(r'```json\s*', '', content)
+    content_clean = re.sub(r'```\s*', '', content_clean)
+
+    # Try parsing the cleaned content
+    start = content_clean.find('{')
+    end = content_clean.rfind('}') + 1
+    if start != -1 and end > start:
+        json_str = content_clean[start:end]
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            pass
+
+    return None

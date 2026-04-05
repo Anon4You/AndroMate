@@ -15,6 +15,19 @@ import config
 from utils import speak
 from providers import get_available_providers
 
+# Color class for terminal output (defined here to avoid circular import)
+class Colors:
+    ACCENT = ""
+    SUCCESS = ""
+    RESET = ""
+    try:
+        from colorama import Fore
+        ACCENT = Fore.BLUE
+        SUCCESS = Fore.LIGHTGREEN_EX
+        RESET = Fore.RESET
+    except:
+        pass
+
 # -------------------------------------------------------------------
 # Helpers
 # -------------------------------------------------------------------
@@ -805,6 +818,267 @@ def get_current_provider():
     speak(msg)
 
 # -------------------------------------------------------------------
+# File Operations for Coding Agent
+# -------------------------------------------------------------------
+def read_file(file_path, limit=None):
+    """Read contents of a file."""
+    try:
+        abs_path = os.path.abspath(file_path)
+        if not os.path.exists(abs_path):
+            print(f"File not found: {abs_path}")
+            speak("File not found")
+            return None
+
+        with open(abs_path, 'r', encoding='utf-8') as f:
+            if limit:
+                content = f.read(limit)
+            else:
+                content = f.read()
+
+        print(f"--- Contents of {abs_path} ---")
+        print(content)
+        print("--- End of file ---")
+        return content
+    except Exception as e:
+        print(f"Error reading file: {e}")
+        speak("Failed to read file")
+        return None
+
+def write_file(file_path, content, mode='w'):
+    """Write content to a file."""
+    try:
+        abs_path = os.path.abspath(file_path)
+        # Ensure parent directory exists
+        parent_dir = os.path.dirname(abs_path)
+        if parent_dir and not os.path.exists(parent_dir):
+            os.makedirs(parent_dir, exist_ok=True)
+
+        with open(abs_path, mode, encoding='utf-8') as f:
+            f.write(content)
+
+        print(f"Written to {abs_path}")
+        speak("File written successfully")
+        return abs_path
+    except Exception as e:
+        print(f"Error writing file: {e}")
+        speak("Failed to write file")
+        return None
+
+def list_directory(dir_path=None, recursive=False):
+    """List files in a directory."""
+    try:
+        if dir_path is None:
+            dir_path = os.getcwd()
+        abs_path = os.path.abspath(dir_path)
+
+        if not os.path.exists(abs_path):
+            print(f"Directory not found: {abs_path}")
+            speak("Directory not found")
+            return []
+
+        if recursive:
+            result = []
+            for root, dirs, files in os.walk(abs_path):
+                level = root.replace(abs_path, '').count(os.sep)
+                indent = '  ' * level
+                result.append(f"{indent}{os.path.basename(root)}/")
+                for f in files:
+                    result.append(f"{indent}  {f}")
+            output = '\n'.join(result)
+        else:
+            items = os.listdir(abs_path)
+            output = '\n'.join(items)
+
+        print(f"--- Contents of {abs_path} ---")
+        print(output)
+        return output
+    except Exception as e:
+        print(f"Error listing directory: {e}")
+        speak("Failed to list directory")
+        return []
+
+def search_files(pattern, base_path=None):
+    """Search for files matching a glob pattern."""
+    try:
+        if base_path is None:
+            base_path = os.getcwd()
+
+        import glob
+        matches = glob.glob(os.path.join(base_path, pattern), recursive=True)
+
+        print(f"--- Files matching '{pattern}' ---")
+        for m in matches:
+            print(m)
+        return matches
+    except Exception as e:
+        print(f"Error searching files: {e}")
+        speak("Failed to search files")
+        return []
+
+def append_file(file_path, content):
+    """Append content to a file."""
+    return write_file(file_path, content, mode='a')
+
+def delete_file(file_path):
+    """Delete a file."""
+    try:
+        abs_path = os.path.abspath(file_path)
+        if os.path.exists(abs_path):
+            os.remove(abs_path)
+            print(f"Deleted {abs_path}")
+            speak("File deleted")
+            return True
+        else:
+            print(f"File not found: {abs_path}")
+            return False
+    except Exception as e:
+        print(f"Error deleting file: {e}")
+        speak("Failed to delete file")
+        return False
+
+def get_file_info(file_path):
+    """Get file metadata."""
+    try:
+        abs_path = os.path.abspath(file_path)
+        if not os.path.exists(abs_path):
+            print(f"File not found: {abs_path}")
+            return None
+
+        stat = os.stat(abs_path)
+        info = {
+            'path': abs_path,
+            'size': stat.st_size,
+            'modified': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+            'created': datetime.fromtimestamp(stat.st_ctime).isoformat(),
+        }
+        print(f"File info: {info}")
+        return info
+    except Exception as e:
+        print(f"Error getting file info: {e}")
+        speak("Failed to get file info")
+        return None
+
+def analyze_project(base_path=None, file_patterns=None):
+    """
+    Analyze a project by reading all source files and building a structure.
+    Returns a comprehensive project overview.
+    """
+    if base_path is None:
+        base_path = os.getcwd()
+
+    if file_patterns is None:
+        file_patterns = ['*.py', '*.js', '*.ts', '*.java', '*.cpp', '*.c', '*.h', '*.go', '*.rs']
+
+    import glob
+    import ast
+
+    project_structure = {
+        'base_path': base_path,
+        'files': [],
+        'modules': [],
+        'classes': [],
+        'functions': [],
+        'imports': [],
+        'dependencies': set(),
+    }
+
+    print(f"\n{Colors.ACCENT}📁 Analyzing project at {base_path}{Colors.RESET}")
+
+    # Find all source files
+    all_files = []
+    for pattern in file_patterns:
+        matches = glob.glob(os.path.join(base_path, '**', pattern), recursive=True)
+        # Exclude common non-source directories
+        filtered = [m for m in matches if not any(excl in m for excl in ['__pycache__', '.git', 'node_modules', 'venv', '.venv'])]
+        all_files.extend(filtered)
+
+    print(f"Found {len(all_files)} source files")
+
+    # Read each file and analyze
+    for file_path in all_files:
+        rel_path = os.path.relpath(file_path, base_path)
+        project_structure['files'].append(rel_path)
+
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Try to parse Python files with AST
+            if file_path.endswith('.py'):
+                try:
+                    tree = ast.parse(content)
+
+                    # Extract classes
+                    for node in ast.walk(tree):
+                        if isinstance(node, ast.ClassDef):
+                            class_info = {
+                                'file': rel_path,
+                                'name': node.name,
+                                'methods': [n.name for n in node.body if isinstance(n, ast.FunctionDef)],
+                                'line': node.lineno
+                            }
+                            project_structure['classes'].append(class_info)
+
+                        if isinstance(node, ast.FunctionDef):
+                            func_info = {
+                                'file': rel_path,
+                                'name': node.name,
+                                'args': [arg.arg for arg in node.args.args],
+                                'line': node.lineno
+                            }
+                            project_structure['functions'].append(func_info)
+
+                        if isinstance(node, ast.Import):
+                            for alias in node.names:
+                                project_structure['imports'].append(alias.name)
+                                project_structure['dependencies'].add(alias.name.split('.')[0])
+
+                        if isinstance(node, ast.ImportFrom):
+                            if node.module:
+                                project_structure['imports'].append(node.module)
+                                project_structure['dependencies'].add(node.module.split('.')[0])
+
+                except SyntaxError:
+                    pass  # Skip files with syntax errors
+
+            # Add file summary
+            lines = content.split('\n')
+            file_info = {
+                'path': rel_path,
+                'lines': len(lines),
+                'size': len(content),
+            }
+            project_structure['modules'].append(file_info)
+
+        except Exception as e:
+            print(f"Warning: Could not analyze {rel_path}: {e}")
+
+    # Print summary
+    print(f"\n{Colors.SUCCESS}Project Analysis Summary:{Colors.RESET}")
+    print(f"  Files: {len(project_structure['files'])}")
+    print(f"  Classes: {len(project_structure['classes'])}")
+    print(f"  Functions: {len(project_structure['functions'])}")
+    print(f"  External dependencies: {len(project_structure['dependencies'])}")
+
+    if project_structure['dependencies']:
+        print(f"\n{Colors.ACCENT}Dependencies:{Colors.RESET}")
+        for dep in sorted(project_structure['dependencies']):
+            print(f"  - {dep}")
+
+    if project_structure['classes']:
+        print(f"\n{Colors.ACCENT}Classes:{Colors.RESET}")
+        for cls in project_structure['classes'][:10]:  # Show first 10
+            print(f"  - {cls['name']} in {cls['file']}:{cls['line']} ({len(cls['methods'])} methods)")
+
+    if project_structure['functions']:
+        print(f"\n{Colors.ACCENT}Functions:{Colors.RESET}")
+        for func in project_structure['functions'][:20]:  # Show first 20
+            args_str = ', '.join(func['args'])
+            print(f"  - {func['name']}({args_str}) in {func['file']}:{func['line']}")
+
+    return project_structure
+
+# -------------------------------------------------------------------
 # Voice output control
 # -------------------------------------------------------------------
 # Set this to True only for voice/wake_word contexts
@@ -916,6 +1190,23 @@ def execute_action(decision, context=None):
         get_current_provider()
     elif action == 'clipboard_action':
         pass  # handled in clipboard module
+    # File Operations for Coding Agent
+    elif action == 'read_file':
+        return read_file(decision.get('file_path'), decision.get('limit'))
+    elif action == 'write_file':
+        return write_file(decision.get('file_path'), decision.get('content'), decision.get('mode', 'w'))
+    elif action == 'append_file':
+        return append_file(decision.get('file_path'), decision.get('content'))
+    elif action == 'list_directory':
+        return list_directory(decision.get('dir_path'), decision.get('recursive', False))
+    elif action == 'search_files':
+        return search_files(decision.get('pattern'), decision.get('base_path'))
+    elif action == 'delete_file':
+        return delete_file(decision.get('file_path'))
+    elif action == 'get_file_info':
+        return get_file_info(decision.get('file_path'))
+    elif action == 'analyze_project':
+        return analyze_project(decision.get('base_path'), decision.get('file_patterns'))
     else:
         print("No action taken.")
         speak("I didn't understand the action.")

@@ -40,21 +40,54 @@ def call_openai(prompt):
     )
     return response.choices[0].message.content
 
-def call_pollinations(prompt):
+def call_pollinations(prompt, retries=2):
     """Use tgpt with pollinations provider (no API key needed)."""
-    try:
-        result = subprocess.run(
-            ["tgpt", "--provider", "pollinations", prompt],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=60
-        )
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        raise Exception(f"tgpt error: {e.stderr}")
-    except FileNotFoundError:
-        raise Exception("tgpt not installed. Run: pkg install tgpt")
+    import re
+    import time
+
+    # Truncate very long prompts to avoid timeout
+    if len(prompt) > 8000:
+        # Keep system instructions and user input, trim examples
+        prompt = prompt[:8000]
+
+    last_error = None
+
+    for attempt in range(retries + 1):
+        try:
+            result = subprocess.run(
+                ["tgpt", "--provider", "pollinations", prompt],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=60
+            )
+            output = result.stdout.strip()
+
+            # Remove loading spinner characters
+            spinner_pattern = r'[⣾⣽⣻⢿⡿⣟⣯⣷]+\s*Loading'
+            output = re.sub(spinner_pattern, '', output)
+
+            # Remove loading indicator lines
+            lines = output.split('\n')
+            clean_lines = [l for l in lines if 'Loading' not in l and l.strip() not in ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷']]
+            output = '\n'.join(clean_lines).strip()
+
+            return output
+
+        except subprocess.CalledProcessError as e:
+            last_error = f"tgpt error: {e.stderr or 'Statuscode: 502'}"
+            if attempt < retries:
+                time.sleep(1)  # Wait before retry
+                continue
+        except subprocess.TimeoutExpired:
+            last_error = "tgpt timeout after 60 seconds"
+            if attempt < retries:
+                time.sleep(1)
+                continue
+        except FileNotFoundError:
+            raise Exception("tgpt not installed. Run: pkg install tgpt")
+
+    raise Exception(last_error or "Unknown error")
 
 def call_fallback(prompt):
     """Simple fallback that returns a fixed action."""
