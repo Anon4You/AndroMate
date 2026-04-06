@@ -1,4 +1,3 @@
-```markdown
 <p align="center">
   <img src="img/img.png" alt="AndroMate Logo" width="200"/>
 
@@ -200,4 +199,3 @@ MIT License — see [LICENSE](LICENSE) for details.
 <p align="center">
   <sub>Built for Termux &middot; Powered by AI &middot; Open Source</sub>
 </p>
-```
