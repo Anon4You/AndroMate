@@ -50,9 +50,8 @@ def ask_ai(text, context="general"):
         if decision:
             action = decision.get('action', '')
 
-            # For web, telegram, and regular cli contexts, always convert to reply action
-            # Only "coding" context (from /code command) can use coding agent actions
-            if context in ('web', 'telegram', 'cli'):
+            # For web and telegram contexts, always convert to reply action
+            if context in ('web', 'telegram'):
                 # If AI returned a coding action, convert it to a text response with code
                 if action == 'write_file':
                     # Extract code and return as markdown-formatted reply
@@ -67,7 +66,20 @@ def ask_ai(text, context="general"):
                 memory.add_assistant_message(response_text)
                 return {"action": "reply", "response": response_text}
 
-            # Only "coding" context (from /code command) allows all actions
+            # For CLI context: allow device actions (run_shell, open_app, etc.) but not coding agent
+            # Coding agent actions are only for "coding" context (from /code command)
+            if action in ('write_file', 'read_file', 'list_directory', 'search_files', 'append_file', 'delete_file'):
+                # Convert coding actions to text response
+                if action == 'write_file':
+                    code = decision.get('content', '')
+                    lang = decision.get('file_path', '').split('.')[-1] if '.' in decision.get('file_path', '') else ''
+                    response_text = f"Here's the code:\n\n```{lang}\n{code}\n```"
+                else:
+                    response_text = content
+                memory.add_assistant_message(response_text)
+                return {"action": "reply", "response": response_text}
+
+            # CLI: allow device actions and reply
             if action == 'reply':
                 memory.add_assistant_message(decision.get('response', ''))
             return decision

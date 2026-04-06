@@ -832,8 +832,11 @@ def run_cli():
             # Hide processing indicator
             hide_processing()
 
-            # For regular CLI (non-/code) commands, always use standard execution
-            # The AI will return a "reply" action or normal device actions
+            # For regular CLI (non-/code) commands, execute device actions normally
+            # The AI can return device actions (run_shell, open_app, etc.) or reply
+            action = decision.get('action', 'unknown')
+            print_action_header(action.replace('_', ' ').title())
+
             old_stdout = sys.stdout
             captured = io.StringIO()
             sys.stdout = captured
