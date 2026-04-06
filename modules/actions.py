@@ -215,7 +215,7 @@ def run_shell(command):
             shell=True,
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=300  # 5 minutes for long-running commands
         )
         if result.stdout:
             print(result.stdout, end='')
