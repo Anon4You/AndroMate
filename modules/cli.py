@@ -832,50 +832,35 @@ def run_cli():
             # Hide processing indicator
             hide_processing()
 
-            # Display action header
-            action = decision.get('action', 'unknown')
-            print_action_header(action.replace('_', ' ').title())
+            # For regular CLI (non-/code) commands, always use standard execution
+            # The AI will return a "reply" action or normal device actions
+            old_stdout = sys.stdout
+            captured = io.StringIO()
+            sys.stdout = captured
 
-            # Check if this is a coding-related task
-            coding_actions = ('read_file', 'write_file', 'run_shell', 'list_directory', 'search_files', 'append_file', 'delete_file')
-            is_coding_task = action in coding_actions
+            result = None
+            error = None
 
-            # Use coding loop for coding tasks
-            if is_coding_task:
-                success = execute_coding_loop(user_input, decision)
-                if success:
-                    print_action_result("Completed successfully", success=True)
-                else:
-                    print_action_result("Completed with errors", success=False)
-            else:
-                # Standard execution for non-coding tasks
-                old_stdout = sys.stdout
-                captured = io.StringIO()
-                sys.stdout = captured
+            try:
+                from actions import execute_action
+                result = execute_action(decision, context="cli")
+            except Exception as e:
+                error = str(e)
 
-                result = None
-                error = None
+            sys.stdout = old_stdout
+            output = captured.getvalue().strip()
 
-                try:
-                    from actions import execute_action
-                    result = execute_action(decision, context="cli")
-                except Exception as e:
-                    error = str(e)
+            # Display captured output
+            if output:
+                for line in output.split('\n'):
+                    if line.strip():
+                        print(f"{Colors.DIM}   │{Colors.RESET} {Colors.INFO}{line}{Colors.RESET}")
 
-                sys.stdout = old_stdout
-                output = captured.getvalue().strip()
-
-                # Display captured output
-                if output:
-                    for line in output.split('\n'):
-                        if line.strip():
-                            print(f"{Colors.DIM}   │{Colors.RESET} {Colors.INFO}{line}{Colors.RESET}")
-
-                # Display error if any
-                if error:
-                    print_action_result(error, success=False)
-                elif output or result:
-                    print_action_result("Completed", success=True)
+            # Display error if any
+            if error:
+                print_action_result(error, success=False)
+            elif output or result:
+                print_action_result("Completed", success=True)
 
             # Print separator
             print_separator(length=50)

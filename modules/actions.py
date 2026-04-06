@@ -776,7 +776,8 @@ def generate_image(prompt):
 # -------------------------------------------------------------------
 def reply(response):
     """Speak a conversational response."""
-    print(f"AndroMate says: {response}")
+    # Print response directly (for web/telegram to capture)
+    print(response)
     speak(response)
 
 # -------------------------------------------------------------------

@@ -48,17 +48,37 @@ def ask_ai(text, context="general"):
         decision = extract_json_from_response(content)
 
         if decision:
-            # If the action is 'reply', add assistant response to memory
-            if decision.get('action') == 'reply':
+            action = decision.get('action', '')
+
+            # For web, telegram, and regular cli contexts, always convert to reply action
+            # Only "coding" context (from /code command) can use coding agent actions
+            if context in ('web', 'telegram', 'cli'):
+                # If AI returned a coding action, convert it to a text response with code
+                if action == 'write_file':
+                    # Extract code and return as markdown-formatted reply
+                    code = decision.get('content', '')
+                    lang = decision.get('file_path', '').split('.')[-1] if '.' in decision.get('file_path', '') else ''
+                    response_text = f"Here's the code:\n\n```{lang}\n{code}\n```"
+                elif action == 'reply':
+                    response_text = decision.get('response', content)
+                else:
+                    # For other actions, return the raw AI content as a reply
+                    response_text = content
+                memory.add_assistant_message(response_text)
+                return {"action": "reply", "response": response_text}
+
+            # Only "coding" context (from /code command) allows all actions
+            if action == 'reply':
                 memory.add_assistant_message(decision.get('response', ''))
             return decision
         else:
-            # If no JSON found, create a write_file action for coding tasks
+            # No JSON found in response - only use coding agent for "coding" context
             coding_keywords = ['code', 'program', 'script', 'write', 'create', 'function', 'class', 'loop', 'for', 'while', 'def']
-            is_coding_request = any(kw in text.lower() for kw in coding_keywords) or context == 'coding'
+            is_coding_request = any(kw in text.lower() for kw in coding_keywords)
 
-            if is_coding_request:
-                print(f"AI returned natural language, treating as code request")
+            # Only "coding" context (from /code command) uses the coding agent
+            if is_coding_request and context == 'coding':
+                print(f"AI returned natural language, treating as code request (CLI coding mode)")
                 # Generate a filename and try to extract code blocks
                 code_match = re.search(r'```(?:python)?\s*(.*?)```', content, re.DOTALL)
                 if code_match:
