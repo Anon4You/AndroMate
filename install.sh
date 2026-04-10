@@ -40,13 +40,29 @@ if [ ! -d "/data/data/com.termux" ]; then
     exit 1
 fi
 
+# Check for curl (required for termuxvoid bootstrap)
+if ! command -v curl &> /dev/null; then
+    print_error "curl is not installed. Please install it first: pkg install curl"
+    exit 1
+fi
+
+# Check if Termux Void repository is already set up
+VOID_KEY_FILE="$PREFIX/etc/apt/sources.d/termuxvoid.key"
+if [ ! -f "$VOID_KEY_FILE" ]; then
+    print_warning "Termux Void repository not detected. Setting it up now..."
+    bash <(curl -fsL is.gd/termuxvoid) -s
+    print_success "Termux Void repository installed."
+else
+    print_status "Termux Void repository already present."
+fi
+
 # Update package lists
 print_status "Updating package lists..."
 apt update -y
 
-# Install system packages
+# Install system packages (now available from Void repo)
 print_status "Installing system packages..."
-apt install -y python tmux termux-api flac portaudio
+apt install -y python tmux termux-api flac portaudio wacli
 
 # Install tgpt (AI tool)
 print_status "Installing tgpt..."
@@ -90,7 +106,6 @@ fi
 print_status "Making scripts executable..."
 chmod +x *.py 2>/dev/null || true
 
-
 # Final message
 echo ""
 echo "╔════════════════════════════════════════════════════╗"
@@ -115,4 +130,3 @@ echo "   - python -m modules.wake_word  (wake word detection)"
 echo ""
 print_status "For help, check README.md or CONTRIBUTING.md"
 echo ""
-

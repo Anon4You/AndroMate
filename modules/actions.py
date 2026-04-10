@@ -107,36 +107,66 @@ def call(recipient_name):
             speak(msg)
 
 def send_whatsapp(recipient_name, message):
+    import pathlib
+
     contact, score = match_contact(recipient_name)
     if contact and contact['phone']:
         number = re.sub(r'[\s\-+]', '', contact['phone'])
-        url = f"https://wa.me/{number}?text={urllib.parse.quote(message)}"
-        try:
-            subprocess.run(["termux-open", url], check=True)
-            print(f"WhatsApp opened to {contact['original_name']}.")
-            speak(f"WhatsApp opened to {contact['original_name']}")
-        except Exception as e:
-            err = f"Error opening WhatsApp: {e}"
-            print(err)
-            speak("Sorry, I couldn't open WhatsApp.")
-            send_notification("WhatsApp Error", err)
+        display_name = contact['original_name']
     else:
         phone = extract_phone_number(recipient_name)
         if phone:
-            url = f"https://wa.me/{phone}?text={urllib.parse.quote(message)}"
-            try:
-                subprocess.run(["termux-open", url], check=True)
-                print(f"WhatsApp opened to {phone}.")
-                speak(f"WhatsApp opened to {phone}")
-            except Exception as e:
-                err = f"Error opening WhatsApp: {e}"
-                print(err)
-                speak("Sorry, I couldn't open WhatsApp.")
-                send_notification("WhatsApp Error", err)
+            number = re.sub(r'[\s\-+]', '', phone)
+            display_name = phone
         else:
             msg = f"No phone number for '{recipient_name}'. WhatsApp not sent."
             print(msg)
             speak(msg)
+            return
+
+    # Check if wacli is configured by looking for .wacli/wacli.db in home directory
+    home_dir = pathlib.Path.home()
+    wacli_db = home_dir / ".wacli" / "wacli.db"
+    wacli_configured = wacli_db.exists()
+
+    if not wacli_configured:
+        msg = "Please configure WhatsApp CLI. Run 'wacli auth'"
+        print(msg)
+        speak("WhatsApp CLI not configured")
+        # Ask user if they want to open WhatsApp as fallback
+        print("Do you want to open WhatsApp instead? (y/n)")
+        try:
+            choice = input().strip().lower()
+            if choice in ('y', 'yes'):
+                url = f"https://wa.me/{number}?text={urllib.parse.quote(message)}"
+                subprocess.run(["xdg-open", url], check=True)
+                print(f"WhatsApp opened to {display_name}.")
+                speak(f"WhatsApp opened to {display_name}")
+            else:
+                print("WhatsApp not sent.")
+        except Exception as e:
+            print(f"Error: {e}")
+        return
+
+    # wacli is configured, send message
+    try:
+        result = subprocess.run(
+            ["wacli", "send", "text", "--to", number, "--message", message],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            print(f"WhatsApp sent to {display_name}: {message}")
+            speak("WhatsApp message sent")
+        else:
+            err = f"Error sending WhatsApp: {result.stderr}"
+            print(err)
+            speak("Sorry, failed to send WhatsApp message.")
+            send_notification("WhatsApp Error", err)
+    except Exception as e:
+        err = f"Error sending WhatsApp: {e}"
+        print(err)
+        speak("Sorry, couldn't send WhatsApp message.")
+        send_notification("WhatsApp Error", err)
 
 def send_telegram(recipient_name, message):
     contact, score = match_contact(recipient_name)

@@ -54,7 +54,7 @@
 - **Communication:**
   - **SMS & Calls:** Send SMS, view call logs with contact names, and make calls.
   - **Email:** Send real background emails via SMTP (Gmail supported).
-  - **Messaging Apps:** WhatsApp and Telegram support (opens app with pre-filled message).
+  - **Messaging Apps:** WhatsApp (via `wacli` CLI tool) and Telegram support.
 - **Enhanced Logs:** Call logs and SMS inbox display contact names, sent/received labels, and message previews.
 - **Contact Management:** List all contacts with "show all" support.
 - **System Management:** Execute shell commands, control brightness, volume, and monitor battery.
