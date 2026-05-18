@@ -16,7 +16,7 @@ def log_error(error, context="", notify_user=True):
     try:
         with open(LOG_FILE, "a") as f:
             f.write(error_msg + "\n")
-    except:
+    except Exception:
         pass
     # Print to terminal
     print(error_msg, file=sys.stderr)
@@ -28,5 +28,5 @@ def log_error(error, context="", notify_user=True):
         subprocess.run(["termux-notification", "--id", "andromate_error",
                         "--title", "AndroMate Error",
                         "--content", str(error)[:100]], timeout=2)
-    except:
+    except Exception:
         pass

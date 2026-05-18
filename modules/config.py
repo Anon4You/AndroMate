@@ -11,7 +11,7 @@ DEFAULTS = {
     "ENABLE_NOTIFICATIONS": True,
     "ENABLE_CLIPBOARD": True,
     "MIN_AI_CALL_INTERVAL": 5,
-    "AI_PROVIDER": "pollinations",  # default
+    "AI_PROVIDER": "local",  # default
     "EMAIL_SENDER": "",
     "EMAIL_APP_PASSWORD": "",
     "TELEGRAM_BOT_TOKEN": "",
@@ -24,7 +24,7 @@ if os.path.exists(USER_CONFIG_PATH):
     try:
         with open(USER_CONFIG_PATH, "r") as f:
             _user_config = json.load(f)
-    except:
+    except Exception:
         pass
 
 # Apply user overrides (module-level variables)
@@ -45,7 +45,7 @@ if not OPENROUTER_API_KEY:
     try:
         with open(os.path.expanduser("~/.openrouter_key")) as f:
             OPENROUTER_API_KEY = f.read().strip()
-    except:
+    except Exception:
         OPENROUTER_API_KEY = None
         # Don't warn here; will be handled when actually used
 
@@ -83,7 +83,7 @@ def reload_config():
         try:
             with open(USER_CONFIG_PATH, "r") as f:
                 new_config = json.load(f)
-        except:
+        except Exception:
             pass
 
     _user_config = new_config

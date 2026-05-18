@@ -95,13 +95,16 @@ Ensure the following dependencies are installed in your Termux environment.
 | `tgpt` | Local AI/Image generation backend | `pkg install tgpt` |
 | `tmux` | Terminal multiplexer for background sessions | `pkg install tmux` |
 | `flac` | Required for `speech_recognition` (wake word) | `pkg install flac` |
+| `portaudio` | Required for audio input (wake word) | `pkg install portaudio` |
+| `wacli` | WhatsApp CLI tool for sending messages | `pkg install wacli` |
+| `9router` | Local AI backend (OpenAI-compatible proxy) | `pkg install 9router` |
 
 > [!NOTE]
 > `ffmpeg` is no longer required as the voice system now uses native Termux speech recognition.
 
 ### Python Libraries
 ```bash
-pip install requests SpeechRecognition colorama flask telebot
+pip install requests SpeechRecognition colorama flask telebot pyaudio
 ```
 
 > [!WARNING]
@@ -122,8 +125,8 @@ pip install requests SpeechRecognition colorama flask telebot
    bash install.sh
    ```
    This will automatically install all required packages:
-   - System packages: `python`, `tmux`, `termux-api`, `flac`, `portaudio`, `tgpt`
-   - Python packages: `requests`, `SpeechRecognition`, `colorama`, `flask`, `pytelegrambot`, `pyaudio`
+   - System packages: `python`, `tmux`, `termux-api`, `flac`, `portaudio`, `tgpt`, `wacli`, `9router`
+   - Python packages: `requests`, `SpeechRecognition`, `colorama`, `flask`, `telebot`, `pyaudio`
 
 3. **Grant Permissions**
    After installation, grant necessary Android permissions:
@@ -134,15 +137,27 @@ pip install requests SpeechRecognition colorama flask telebot
    termux-location             # For location services
    ```
 
-4. **Configure API Keys (Optional)**
-   Required only for OpenRouter or OpenAI providers. Pollinations works out-of-the-box.
+4. **Set up 9router (AI Backend)**
+   AndroMate uses 9router as its default AI backend. Start it before running AndroMate:
+   ```bash
+   9router
+   ```
+   Then:
+   - Open the dashboard URL shown in the terminal
+   - Scroll down to **Free AI**
+   - Choose **OpenCode**
+   - Add the **deepseek** model and save
+
+5. **Configure API Keys (Optional)**
+   Required only if using OpenRouter or OpenAI providers instead of the default local backend.
    ```bash
    echo "your-openrouter-api-key" > ~/.openrouter_key
    ```
 
-5. **Run the Assistant**
+6. **Run the Assistant**
+   Make sure 9router is running in another terminal session (use tmux).
    ```bash
-   python andromate.py voice
+   python andromate.py cli
    ```
 
 ---
@@ -158,7 +173,7 @@ AndroMate offers multiple operational modes:
 | **CLI** | `python andromate.py cli` | Interactive shell with colored output and saved history. |
 | **Web** | `python andromate.py web` | Launches the Flask Web Dashboard. |
 | **Telegram** | `python andromate.py telegram` | Starts the Telegram bot for remote control. |
-| **Daemon** | `python andromate.py` | Background mode. Monitors clipboard changes. |
+| **Daemon** | `python andromate.py` | Background mode. Monitors clipboard changes and notifications. |
 
 ### 🗣️ Example Commands
 
@@ -265,9 +280,26 @@ To send emails, add your Gmail credentials to `~/.andromate/config.json`:
 > 3. Use that 16-character password in the config.
 
 ### General Settings
+
+All settings in `~/.andromate/config.json`:
+
+| Key | Default | Description |
+| :--- | :--- | :--- |
+| `AI_PROVIDER` | `"pollinations"` | AI backend to use (`pollinations`, `openrouter`, `openai`) |
+| `POLL_INTERVAL` | `2` | Seconds between background monitoring checks |
+| `MIN_AI_CALL_INTERVAL` | `5` | Minimum seconds between AI calls (rate limiting) |
+| `ENABLE_VOICE` | `true` | Enable spoken feedback via TTS |
+| `ENABLE_NOTIFICATIONS` | `true` | Enable notification monitoring in daemon mode |
+| `ENABLE_CLIPBOARD` | `true` | Enable clipboard monitoring in daemon mode |
+| `EMAIL_SENDER` | `""` | Gmail address for sending emails |
+| `EMAIL_APP_PASSWORD` | `""` | Gmail app password (not your regular password) |
+| `TELEGRAM_BOT_TOKEN` | `""` | Telegram bot token from @BotFather |
+| `TELEGRAM_AUTHORIZED_CHAT_ID` | `null` | Your Telegram chat ID for authorization |
+
 - **Switching Providers:**
   - Voice: *"Switch to pollinations"* (Changes apply instantly).
-  - Config: Edit the `provider` key in `config.json`.
+  - CLI: Use the `setprovider` command.
+  - Config: Edit the `AI_PROVIDER` key in `config.json`.
 - **CLI History:** Your command history is automatically saved in `~/.andromate/`.
 
 ---
@@ -289,6 +321,7 @@ AndroMate/
     ├── contacts.py       # Fuzzy contact name matching & listing
     ├── error_handler.py  # Centralized error logging
     ├── main.py           # Background daemon logic
+    ├── memory.py         # In-memory conversation history
     ├── notifications.py  # Toast and Dialog handlers
     ├── prompt_manager.py # Dynamic AI prompt generation
     ├── providers.py      # API wrappers (OpenRouter, Pollinations, etc.)

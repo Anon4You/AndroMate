@@ -98,7 +98,7 @@ def print_status_bar():
     try:
         from config import AI_PROVIDER
         provider = AI_PROVIDER
-    except:
+    except Exception:
         pass
 
     print(f"{Colors.DIM}[{Colors.RESET}{Colors.BOLD}{get_greeting_emoji()} {get_timestamp()}{Colors.RESET}{Colors.DIM}] [{Colors.BOLD}{Colors.ACCENT}{provider}{Colors.RESET}{Colors.DIM}]{Colors.RESET}")
@@ -160,7 +160,7 @@ def print_help():
 
 {Colors.BOLD}{Colors.SUCCESS}AI Features{Colors.RESET}
   {Colors.PRIMARY}{Icons.ARROW}{Colors.RESET} generate an image of a cat
-  {Colors.PRIMARY}{Icons.ARROW}{Colors.RESET} switch to pollinations
+  {Colors.PRIMARY}{Icons.ARROW}{Colors.RESET} switch to local
 
 {Colors.DIM}Special: {Colors.RESET}help{Colors.DIM} | {Colors.RESET}clear{Colors.DIM} | {Colors.RESET}quit{Colors.RESET}
 """
@@ -278,9 +278,6 @@ def run_cli():
             print_error(f"Unexpected error: {e}")
             import traceback
             traceback.print_exc()
-
-# Ensure io is imported
-import io
 
 if __name__ == "__main__":
     run_cli()

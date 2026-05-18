@@ -64,7 +64,7 @@ def send_notification(title, content):
     """Helper to send a Termux notification."""
     try:
         subprocess.run(["termux-notification", "--id", "andromate_error", "--title", title, "--content", content])
-    except:
+    except Exception:
         pass
 
 # -------------------------------------------------------------------
@@ -257,7 +257,7 @@ def run_shell(command):
         else:
             speak("Command finished with errors")
     except subprocess.TimeoutExpired:
-        print("Command timed out after 30 seconds.")
+        print("Command timed out after 300 seconds.")
         speak("Command timed out")
     except Exception as e:
         print(f"Error executing command: {e}")
@@ -817,7 +817,7 @@ def set_provider(provider_name):
         try:
             with open(USER_CONFIG_PATH, "r") as f:
                 config_data = json.load(f)
-        except:
+        except Exception:
             pass
     config_data["AI_PROVIDER"] = provider_name
     os.makedirs(os.path.dirname(USER_CONFIG_PATH), exist_ok=True)

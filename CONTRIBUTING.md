@@ -64,18 +64,15 @@ Enhancement suggestions are tracked as GitHub Issues. When suggesting an enhance
 2.  **Install Dependencies:**
     Ensure you have the prerequisites listed in the [README](README.md#requirements) installed.
 
-> [!NOTE]
-> `ffmpeg` is no longer required, but `flac` is necessary for the Wake Word feature.
-
     ```bash
-    pkg install python termux-api tgpt tmux flac
-    pip install requests SpeechRecognition colorama flask telebot
+    pkg install python termux-api tgpt tmux flac portaudio wacli 9router
+    pip install requests SpeechRecognition colorama flask telebot pyaudio
     ```
 
-4.  **Configuration (Optional):**
+3.  **Configuration (Optional):**
     If you are testing specific features like Email or Telegram, you will need to set up your `~/.andromate/config.json` or API keys as described in the README.
 
-5.  **Testing:**
+4.  **Testing:**
     There is currently no automated test suite. Testing is done manually by running the assistant in different modes:
     ```bash
     # Test core logic
@@ -98,6 +95,7 @@ We follow standard **PEP 8** guidelines with a few specifics:
 *   **Indentation:** Use 4 spaces, not tabs.
 *   **Docstrings:** Use triple quotes (`"""`) for function and module documentation. Explain what the function does, its arguments, and return values.
 *   **Imports:** Group imports in the following order: Standard Library, Third Party, Local Application. Separate groups with a blank line.
+*   **Exception Handling:** Use `except Exception:` instead of bare `except:`. Bare excepts catch `KeyboardInterrupt` and `SystemExit`, which is almost never what you want.
 
 ### Code Structure
 Keep the code modular. If you are adding a new capability, follow this guide:
@@ -108,8 +106,8 @@ Keep the code modular. If you are adding a new capability, follow this guide:
     3.  Update `modules/prompt_manager.py` so the AI knows how to trigger the new action.
 
 *   **New AI Provider:**
-    1.  Add the wrapper class/function to `modules/providers.py`.
-    2.  Register it in the provider selection logic within `modules/ai.py`.
+    1.  Add the wrapper function to `modules/providers.py`.
+    2.  Register it in the `PROVIDERS` dict in the same file.
 
 *   **New Interface (e.g., "Discord Bot"):**
     1.  Create a new file in `modules/` (e.g., `discord_bot.py`).
@@ -139,6 +137,7 @@ AndroMate/
     ├── contacts.py       # Contact name resolution
     ├── error_handler.py  # Centralized error logging
     ├── main.py           # Background daemon logic
+    ├── memory.py         # In-memory conversation history
     ├── notifications.py  # Toast & Dialog wrappers
     ├── prompt_manager.py # ⭐ Update AI instructions here
     ├── providers.py      # ⭐ Add new AI providers here

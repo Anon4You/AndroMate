@@ -93,7 +93,7 @@ def status():
         if battery.returncode == 0:
             data = json.loads(battery.stdout)
             status_data['battery'] = data.get('percentage', 'unknown')
-    except:
+    except Exception:
         status_data['battery'] = 'unknown'
 
     try:
@@ -101,7 +101,7 @@ def status():
         if wifi.returncode == 0:
             data = json.loads(wifi.stdout)
             status_data['wifi'] = data.get('ssid', 'Not connected')
-    except:
+    except Exception:
         status_data['wifi'] = 'unknown'
 
     return jsonify(status_data)

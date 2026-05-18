@@ -1,7 +1,6 @@
 # providers.py
 import json
 import requests
-import subprocess
 import os
 
 def call_openrouter(prompt):
@@ -30,31 +29,49 @@ def call_openrouter(prompt):
     return content
 
 def call_openai(prompt):
-    """Call OpenAI API (requires OPENAI_API_KEY)."""
-    import openai
-    openai.api_key = os.environ.get("OPENAI_API_KEY")
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0
+    """Call OpenAI API via requests (requires OPENAI_API_KEY)."""
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise Exception("OPENAI_API_KEY environment variable not set.")
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0
+    }
+    response = requests.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers=headers,
+        json=payload,
+        timeout=30
     )
-    return response.choices[0].message.content
+    response.raise_for_status()
+    data = response.json()
+    content = data["choices"][0]["message"]["content"]
+    return content
 
-def call_pollinations(prompt):
-    """Use tgpt with pollinations provider (no API key needed)."""
-    try:
-        result = subprocess.run(
-            ["tgpt", "--provider", "pollinations", prompt],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=60
-        )
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        raise Exception(f"tgpt error: {e.stderr}")
-    except FileNotFoundError:
-        raise Exception("tgpt not installed. Run: pkg install tgpt")
+def call_local(prompt):
+    """Call local OpenAI-compatible endpoint (no API key needed)."""
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "model": "oc/deepseek-v4-flash-free",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0
+    }
+    response = requests.post(
+        "http://localhost:20128/v1/chat/completions",
+        headers=headers,
+        json=payload,
+        timeout=120
+    )
+    response.raise_for_status()
+    # Endpoint may append "data: [DONE]" after JSON — extract just the JSON part
+    text = response.text.split("data:")[0].strip()
+    data = json.loads(text)
+    return data["choices"][0]["message"]["content"]
 
 def call_fallback(prompt):
     """Simple fallback that returns a fixed action."""
@@ -62,9 +79,9 @@ def call_fallback(prompt):
 
 # Map provider names to functions
 PROVIDERS = {
+    "local": call_local,
     "openrouter": call_openrouter,
     "openai": call_openai,
-    "pollinations": call_pollinations,
     "fallback": call_fallback,
 }
 

@@ -17,9 +17,23 @@ def get_clipboard():
 def transform_text(text, operation):
     operation = operation.lower()
     if "summarize" in operation:
-        return text[:100] + ("..." if len(text) > 100 else "")
+        # Use AI to generate a real summary
+        try:
+            summary = ask_ai(f"Summarize this in 1-2 sentences:\n\n{text}", context="clipboard")
+            if isinstance(summary, dict):
+                return summary.get("response", text[:150] + "...")
+            return str(summary).strip() or (text[:150] + "...")
+        except Exception:
+            return text[:150] + ("..." if len(text) > 150 else "")
     elif "translate" in operation:
-        return f"[Translated from '{operation}']: {text}"
+        # Use AI to translate
+        try:
+            translated = ask_ai(f"Translate this text to English:\n\n{text}", context="clipboard")
+            if isinstance(translated, dict):
+                return translated.get("response", text)
+            return str(translated).strip() or text
+        except Exception:
+            return text
     else:
         return text
 

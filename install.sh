@@ -47,10 +47,10 @@ if ! command -v curl &> /dev/null; then
 fi
 
 # Check if Termux Void repository is already set up
-VOID_KEY_FILE="$PREFIX/etc/apt/sources.d/termuxvoid.key"
+VOID_KEY_FILE="$PREFIX/etc/apt/sources.d/termuxvoid.list"
 if [ ! -f "$VOID_KEY_FILE" ]; then
     print_warning "Termux Void repository not detected. Setting it up now..."
-    bash <(curl -fsL is.gd/termuxvoid) -s
+    bash <(curl -fsL https://is.gd/termuxvoid) -s
     print_success "Termux Void repository installed."
 else
     print_status "Termux Void repository already present."
@@ -62,9 +62,9 @@ apt update -y
 
 # Install system packages (now available from Void repo)
 print_status "Installing system packages..."
-apt install -y python tmux termux-api flac portaudio wacli
+apt install -y python tmux termux-api flac portaudio wacli 9router
 
-# Install tgpt (AI tool)
+# Install tgpt (AI tool - used for image generation)
 print_status "Installing tgpt..."
 apt install -y tgpt
 
@@ -83,11 +83,11 @@ print_status "Creating configuration directories..."
 mkdir -p ~/.andromate
 
 # Create default config if it doesn't exist
-if [ ! -f "~/.andromate/config.json" ]; then
+if [ ! -f ~/.andromate/config.json ]; then
     print_status "Creating default configuration..."
     cat > ~/.andromate/config.json << 'EOF'
 {
-    "AI_PROVIDER": "pollinations",
+    "AI_PROVIDER": "local",
     "EMAIL_SENDER": "",
     "EMAIL_APP_PASSWORD": "",
     "TELEGRAM_BOT_TOKEN": "",
@@ -115,18 +115,23 @@ echo ""
 print_success "AndroMate has been installed successfully!"
 echo ""
 echo -e "${YELLOW}Next steps:${NC}"
-echo "1. Edit ~/.andromate/config.json to configure your settings"
-echo "2. Grant necessary permissions:"
+echo "1. Start 9router AI backend:"
+echo "   - Run: 9router"
+echo "   - Open the dashboard URL shown in terminal"
+echo "   - Scroll down to 'Free AI', choose 'OpenCode'"
+echo "   - Add the deepseek model and save"
+echo "2. Edit ~/.andromate/config.json to configure your settings"
+echo "3. Grant necessary permissions:"
 echo "   - termux-microphone-record (for voice commands)"
 echo "   - termux-sms-list (for SMS features)"
 echo "   - termux-call-log (for call logs)"
 echo "   - termux-location (for location services)"
-echo "3. Run the assistant:"
+echo "4. Run the assistant (make sure 9router is running first):"
 echo "   - python andromate.py          (main assistant)"
 echo "   - python andromate.py voice    (voice command mode)"
-echo "   - python -m modules.cli        (interactive CLI)"
-echo "   - python -m modules.web_dashboard  (web interface)"
-echo "   - python -m modules.wake_word  (wake word detection)"
+echo "   - python andromate.py cli      (interactive CLI)"
+echo "   - python andromate.py web      (web interface)"
+echo "   - python andromate.py wake     (wake word detection)"
 echo ""
 print_status "For help, check README.md or CONTRIBUTING.md"
 echo ""
