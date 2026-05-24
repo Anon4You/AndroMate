@@ -11,7 +11,7 @@ DEFAULTS = {
     "ENABLE_NOTIFICATIONS": True,
     "ENABLE_CLIPBOARD": True,
     "MIN_AI_CALL_INTERVAL": 5,
-    "AI_PROVIDER": "local",  # default
+    "AI_PROVIDER": "opengateway",  # default
     "EMAIL_SENDER": "",
     "EMAIL_APP_PASSWORD": "",
     "TELEGRAM_BOT_TOKEN": "",
@@ -39,17 +39,10 @@ EMAIL_APP_PASSWORD = _user_config.get("EMAIL_APP_PASSWORD", DEFAULTS["EMAIL_APP_
 TELEGRAM_BOT_TOKEN = _user_config.get("TELEGRAM_BOT_TOKEN", DEFAULTS["TELEGRAM_BOT_TOKEN"])
 TELEGRAM_AUTHORIZED_CHAT_ID = _user_config.get("TELEGRAM_AUTHORIZED_CHAT_ID", DEFAULTS["TELEGRAM_AUTHORIZED_CHAT_ID"])
 
-# OpenRouter – try environment variable, then file
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
-if not OPENROUTER_API_KEY:
-    try:
-        with open(os.path.expanduser("~/.openrouter_key")) as f:
-            OPENROUTER_API_KEY = f.read().strip()
-    except Exception:
-        OPENROUTER_API_KEY = None
-        # Don't warn here; will be handled when actually used
-
-OPENROUTER_BASE = "https://openrouter.ai/api/v1"
+# OpenGateway (OpenAI-compatible backend) — default key included, users can override in config
+OPENGATEWAY_API_KEY = os.environ.get("OPENGATEWAY_API_KEY") or _user_config.get("OPENGATEWAY_API_KEY", "ogw_live_8f7bf4d17564378ecc52462f3aa511fd")
+OPENGATEWAY_BASE = _user_config.get("OPENGATEWAY_BASE", "https://opengateway.gitlawb.com/v1")
+OPENGATEWAY_MODEL = _user_config.get("OPENGATEWAY_MODEL", "mimo-v2.5-pro")
 
 # Map common app names to actual Android package names
 APP_NAME_TO_PACKAGE = {
@@ -75,6 +68,7 @@ def reload_config():
     global POLL_INTERVAL, ENABLE_VOICE, ENABLE_NOTIFICATIONS, ENABLE_CLIPBOARD
     global MIN_AI_CALL_INTERVAL, AI_PROVIDER, EMAIL_SENDER, EMAIL_APP_PASSWORD
     global TELEGRAM_BOT_TOKEN, TELEGRAM_AUTHORIZED_CHAT_ID
+    global OPENGATEWAY_API_KEY, OPENGATEWAY_BASE, OPENGATEWAY_MODEL
     global _user_config
 
     # Re-read config file
@@ -99,3 +93,6 @@ def reload_config():
     EMAIL_APP_PASSWORD = _user_config.get("EMAIL_APP_PASSWORD", DEFAULTS["EMAIL_APP_PASSWORD"])
     TELEGRAM_BOT_TOKEN = _user_config.get("TELEGRAM_BOT_TOKEN", DEFAULTS["TELEGRAM_BOT_TOKEN"])
     TELEGRAM_AUTHORIZED_CHAT_ID = _user_config.get("TELEGRAM_AUTHORIZED_CHAT_ID", DEFAULTS["TELEGRAM_AUTHORIZED_CHAT_ID"])
+    OPENGATEWAY_API_KEY = os.environ.get("OPENGATEWAY_API_KEY") or _user_config.get("OPENGATEWAY_API_KEY", "ogw_live_8f7bf4d17564378ecc52462f3aa511fd")
+    OPENGATEWAY_BASE = _user_config.get("OPENGATEWAY_BASE", "https://opengateway.gitlawb.com/v1")
+    OPENGATEWAY_MODEL = _user_config.get("OPENGATEWAY_MODEL", "mimo-v2.5-pro")

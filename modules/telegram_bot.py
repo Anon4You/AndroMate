@@ -250,7 +250,7 @@ def cmd_photo(message):
         sys.stdout = old_stdout
         if photo_path and os.path.exists(photo_path):
             with open(photo_path, 'rb') as photo:
-                bot.send_photo(message.chat.id, photo, caption="📷 Photo taken")
+                bot.send_photo(message.chat.id, photo)
         else:
             bot.reply_to(message, "❌ Failed to take photo")
     except Exception as e:
@@ -481,7 +481,11 @@ def cmd_ai_chat(message):
 
         if result and os.path.exists(result):
             with open(result, 'rb') as photo:
-                bot.send_photo(message.chat.id, photo, caption="Here's your image!")
+                bot.send_photo(message.chat.id, photo)
+            try:
+                os.remove(result)
+            except OSError:
+                pass
         elif output:
             bot.reply_to(message, f"```\n{output}\n```", parse_mode="MarkdownV2")
         else:
@@ -520,10 +524,14 @@ def handle_message(message):
 
     output = new_stdout.getvalue()
 
-    # If the action generated an image, send it
+    # If the action generated an image, send it and clean up
     if result and os.path.exists(result):
         with open(result, 'rb') as photo:
-            bot.send_photo(message.chat.id, photo, caption="Here's your image!")
+            bot.send_photo(message.chat.id, photo)
+        try:
+            os.remove(result)
+        except OSError:
+            pass
     elif output.strip():
         bot.reply_to(message, f"```\n{output.strip()}\n```", parse_mode="MarkdownV2")
     else:

@@ -94,7 +94,7 @@ def print_header():
 
 def print_status_bar():
     """Print a compact status bar."""
-    provider = "local"
+    provider = "opengateway"
     try:
         from config import AI_PROVIDER
         provider = AI_PROVIDER
@@ -160,7 +160,7 @@ def print_help():
 
 {Colors.BOLD}{Colors.SUCCESS}AI Features{Colors.RESET}
   {Colors.PRIMARY}{Icons.ARROW}{Colors.RESET} generate an image of a cat
-  {Colors.PRIMARY}{Icons.ARROW}{Colors.RESET} switch to local
+  {Colors.PRIMARY}{Icons.ARROW}{Colors.RESET} what can you do?
 
 {Colors.DIM}Special: {Colors.RESET}help{Colors.DIM} | {Colors.RESET}clear{Colors.DIM} | {Colors.RESET}quit{Colors.RESET}
 """

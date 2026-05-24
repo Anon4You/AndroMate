@@ -65,7 +65,7 @@ def handle_command():
         sys.stdout = old_stdout
 
     output = new_stdout.getvalue()
-    response_data = {'output': output, 'error': error, 'trace': trace}
+    response_data = {'output': '', 'error': error, 'trace': trace}
 
     # If the result is an image file, copy it to generated folder and return URL
     if result and os.path.exists(result):
@@ -82,6 +82,8 @@ def handle_command():
         # Return URL relative to the server
         image_url = url_for('serve_generated', filename=os.path.basename(dest))
         response_data['image'] = image_url
+    else:
+        response_data['output'] = output
 
     return jsonify(response_data)
 

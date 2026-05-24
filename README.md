@@ -45,9 +45,8 @@
 ## ✨ Features
 
 ### 🧠 Core Intelligence
-- **Multi-Provider AI:** Seamlessly switch between **OpenRouter**, **OpenAI**, and **Pollinations** (free, no-key required).
+- **AI-Powered:** Uses [OpenGateway](https://opengateway.gitlawb.com) as the default AI backend — free, fast, and OpenAI-compatible. Get your API key at [gitlawb.com/opengateway/keys](https://gitlawb.com/opengateway/keys).
 - **Native Voice Recognition:** Hands-free control via `termux-speech-to-text`. Faster, simpler, and works offline.
-- **Hot-Swappable Providers:** Switch AI providers instantly via command—no restart required.
 - **Spoken Feedback:** Uses `termux-tts-speak` for audible confirmations.
 
 ### 📱 Device Control & Automation
@@ -97,7 +96,6 @@ Ensure the following dependencies are installed in your Termux environment.
 | `flac` | Required for `speech_recognition` (wake word) | `pkg install flac` |
 | `portaudio` | Required for audio input (wake word) | `pkg install portaudio` |
 | `wacli` | WhatsApp CLI tool for sending messages | `pkg install wacli` |
-| `9router` | Local AI backend (OpenAI-compatible proxy) | `pkg install 9router` |
 
 > [!NOTE]
 > `ffmpeg` is no longer required as the voice system now uses native Termux speech recognition.
@@ -125,7 +123,7 @@ pip install requests SpeechRecognition colorama flask telebot pyaudio
    bash install.sh
    ```
    This will automatically install all required packages:
-   - System packages: `python`, `tmux`, `termux-api`, `flac`, `portaudio`, `tgpt`, `wacli`, `9router`
+   - System packages: `python`, `tmux`, `termux-api`, `flac`, `portaudio`, `tgpt`, `wacli`
    - Python packages: `requests`, `SpeechRecognition`, `colorama`, `flask`, `telebot`, `pyaudio`
 
 3. **Grant Permissions**
@@ -137,25 +135,16 @@ pip install requests SpeechRecognition colorama flask telebot pyaudio
    termux-location             # For location services
    ```
 
-4. **Set up 9router (AI Backend)**
-   AndroMate uses 9router as its default AI backend. Start it before running AndroMate:
-   ```bash
-   9router
-   ```
-   Then:
-   - Open the dashboard URL shown in the terminal
-   - Scroll down to **Free AI**
-   - Choose **OpenCode**
-   - Add the **deepseek** model and save
+4. **Get your API Key**
+   AndroMate uses [OpenGateway](https://opengateway.gitlawb.com) as its AI backend. Get a free API key:
+   - Visit [gitlawb.com/opengateway/keys](https://gitlawb.com/opengateway/keys)
+   - Generate a key and copy it
+   - Edit `~/.andromate/config.json` and set your key:
+     ```json
+     "OPENGATEWAY_API_KEY": "ogw_live_your_key_here"
+     ```
 
-5. **Configure API Keys (Optional)**
-   Required only if using OpenRouter or OpenAI providers instead of the default local backend.
-   ```bash
-   echo "your-openrouter-api-key" > ~/.openrouter_key
-   ```
-
-6. **Run the Assistant**
-   Make sure 9router is running in another terminal session (use tmux).
+5. **Run the Assistant**
    ```bash
    python andromate.py cli
    ```
@@ -187,7 +176,7 @@ AndroMate offers multiple operational modes:
 
 **AI & Media**
 > "Generate an image of a futuristic city."
-> "Switch to OpenAI provider." (Takes effect immediately)
+> "What can you do?"
 
 ---
 
@@ -285,7 +274,10 @@ All settings in `~/.andromate/config.json`:
 
 | Key | Default | Description |
 | :--- | :--- | :--- |
-| `AI_PROVIDER` | `"pollinations"` | AI backend to use (`pollinations`, `openrouter`, `openai`) |
+| `AI_PROVIDER` | `"opengateway"` | AI backend to use (`opengateway`, `fallback`) |
+| `OPENGATEWAY_API_KEY` | *(required)* | Your OpenGateway API key — get one free at [gitlawb.com/opengateway/keys](https://gitlawb.com/opengateway/keys) |
+| `OPENGATEWAY_BASE` | `https://opengateway.gitlawb.com/v1` | API endpoint URL |
+| `OPENGATEWAY_MODEL` | `mimo-v2.5-pro` | Model name to use |
 | `POLL_INTERVAL` | `2` | Seconds between background monitoring checks |
 | `MIN_AI_CALL_INTERVAL` | `5` | Minimum seconds between AI calls (rate limiting) |
 | `ENABLE_VOICE` | `true` | Enable spoken feedback via TTS |
@@ -297,7 +289,6 @@ All settings in `~/.andromate/config.json`:
 | `TELEGRAM_AUTHORIZED_CHAT_ID` | `null` | Your Telegram chat ID for authorization |
 
 - **Switching Providers:**
-  - Voice: *"Switch to pollinations"* (Changes apply instantly).
   - CLI: Use the `setprovider` command.
   - Config: Edit the `AI_PROVIDER` key in `config.json`.
 - **CLI History:** Your command history is automatically saved in `~/.andromate/`.
@@ -324,7 +315,7 @@ AndroMate/
     ├── memory.py         # In-memory conversation history
     ├── notifications.py  # Toast and Dialog handlers
     ├── prompt_manager.py # Dynamic AI prompt generation
-    ├── providers.py      # API wrappers (OpenRouter, Pollinations, etc.)
+    ├── providers.py      # AI provider wrappers (OpenGateway)
     ├── shared.py         # Thread‑safe flags (e.g., speaking state)
     ├── telegram_bot.py   # Telegram bot interface
     ├── utils.py          # Helpers (TTS, fuzzy matching, etc.)
@@ -341,13 +332,22 @@ AndroMate is currently in **Active Development (Beta)**.
 
 - [x] Core Voice & CLI functionality
 - [x] Native Speech-to-Text integration
-- [x] Multi-provider support (Hot-swap)
+- [x] AI-powered via OpenGateway
 - [x] Telegram Remote Control
 - [x] Web Dashboard
 - [x] Wake Word Activation
 - [x] Enhanced Context Awareness
 
 We welcome contributions! Please see `CONTRIBUTING.md` for guidelines.
+
+---
+
+## 🙏 Acknowledgments
+
+- **[OpenGateway](https://opengateway.gitlawb.com)** — Free, OpenAI-compatible API that powers AndroMate's AI backend. No API key required for default usage.
+- **[tgpt](https://github.com/aandrew-me/tgpt)** — Terminal-based AI tool used for image generation via the `arta` provider.
+- **[Termux](https://termux.com)** — The Android terminal emulator that makes AndroMate possible.
+- **[Termux:API](https://wiki.termux.com/wiki/Termux:API)** — Provides hardware access (camera, SMS, contacts, location, etc.).
 
 ---
 
@@ -358,5 +358,6 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 ---
 
 <p align="center">
+  Powered by <a href="https://opengateway.gitlawb.com">OpenGateway</a><br>
   Developed with ❤️ by <a href="https://github.com/Anon4You">Anon4You</a>
 </p>

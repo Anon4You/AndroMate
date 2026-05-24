@@ -588,14 +588,13 @@
 
                 if (data.error) {
                     addMessage('assistant', `Error: ${data.error}`, true);
+                } else if (data.image) {
+                    addImageMessage(data.image);
                 } else {
-                    if (data.image) {
-                        addImageMessage(data.image);
-                    }
                     const output = data.output.trim();
                     if (output) {
                         addMessage('assistant', output);
-                    } else if (!data.image) {
+                    } else {
                         addMessage('assistant', 'Done.');
                     }
                 }

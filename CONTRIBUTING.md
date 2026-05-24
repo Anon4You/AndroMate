@@ -65,12 +65,17 @@ Enhancement suggestions are tracked as GitHub Issues. When suggesting an enhance
     Ensure you have the prerequisites listed in the [README](README.md#requirements) installed.
 
     ```bash
-    pkg install python termux-api tgpt tmux flac portaudio wacli 9router
+    pkg install python termux-api tgpt tmux flac portaudio wacli
     pip install requests SpeechRecognition colorama flask telebot pyaudio
     ```
 
-3.  **Configuration (Optional):**
-    If you are testing specific features like Email or Telegram, you will need to set up your `~/.andromate/config.json` or API keys as described in the README.
+3.  **Configuration:**
+    AndroMate uses [OpenGateway](https://opengateway.gitlawb.com) as its AI backend. Get a free API key at [gitlawb.com/opengateway/keys](https://gitlawb.com/opengateway/keys) and set it in `~/.andromate/config.json`:
+    ```json
+    {
+      "OPENGATEWAY_API_KEY": "ogw_live_your_key_here"
+    }
+    ```
 
 4.  **Testing:**
     There is currently no automated test suite. Testing is done manually by running the assistant in different modes:

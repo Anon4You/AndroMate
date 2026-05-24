@@ -52,6 +52,15 @@ def ask_ai(text, context="general"):
             # If the action is 'reply', add assistant response to memory
             if decision.get('action') == 'reply':
                 memory.add_assistant_message(decision.get('response', ''))
+            else:
+                # Track non-reply actions for pronoun/context resolution
+                action = decision.get('action', '')
+                recipient = decision.get('recipient', '')
+                msg = decision.get('message', '')
+                detail = f"to {recipient}" if recipient else ""
+                if msg:
+                    detail += f": {msg}" if detail else f"message: {msg}"
+                memory.add_action(action, detail)
             return decision
         else:
             print("No JSON found in response.")

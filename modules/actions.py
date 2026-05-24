@@ -733,20 +733,29 @@ def send_email_smtp(recipient, subject, body):
 # -------------------------------------------------------------------
 def generate_image(prompt):
     """Generate an image using tgpt with arta provider. Returns path to the saved image."""
-    print(f"🎨 Generating image for: '{prompt}'")
+    verbose = _voice_enabled
+    if verbose:
+        print(f"Generating image for: '{prompt}'")
     speak("Generating image. Please wait...")
+
+    # Use a single canonical directory for all generated images
+    gen_dir = os.path.expanduser("~/.andromate/generated")
+    os.makedirs(gen_dir, exist_ok=True)
+
     cmd = ["tgpt", "--provider", "arta", "--img", prompt]
     try:
-        # Answer "y" to let tgpt save the image
+        # Run tgpt from the canonical directory so images land in one place
         result = subprocess.run(
             cmd,
             input="y\n",
             capture_output=True,
             text=True,
-            timeout=120
+            timeout=120,
+            cwd=gen_dir
         )
         if result.returncode != 0:
-            print(f"❌ Error: {result.stderr}")
+            if verbose:
+                print(f"Error: {result.stderr}")
             speak("Image generation failed.")
             return None
 
@@ -754,37 +763,39 @@ def generate_image(prompt):
         # Look for "Image URL: ..."
         url_match = re.search(r'Image URL: (https?://[^\s]+)', output)
         if not url_match:
-            print("❌ Could not find image URL in output.")
+            if verbose:
+                print("Could not find image URL in output.")
             speak("Image generation failed.")
             return None
 
         image_url = url_match.group(1)
-        print(f"🔗 Image URL: {image_url}")
-
-        # Extract filename from URL (last part after '/')
         filename = image_url.split('/')[-1]
         if not filename:
-            print("❌ Could not extract filename from URL.")
+            if verbose:
+                print("Could not extract filename from URL.")
             speak("Image generation failed.")
             return None
 
-        # Assume tgpt saved the file in the current directory with that name
-        local_path = os.path.join(os.getcwd(), filename)
+        local_path = os.path.join(gen_dir, filename)
         if os.path.exists(local_path):
-            print(f"✅ Image saved to {local_path}")
+            if verbose:
+                print(f"Image saved to {local_path}")
             speak("Image generated.")
             return local_path
         else:
-            print(f"❌ Expected file {local_path} not found.")
+            if verbose:
+                print(f"Expected file {local_path} not found.")
             speak("Image file not found.")
             return None
 
     except subprocess.TimeoutExpired:
-        print("⏱️ Image generation timed out.")
+        if verbose:
+            print("Image generation timed out.")
         speak("Image generation timed out.")
         return None
     except Exception as e:
-        print(f"❌ Error: {e}")
+        if verbose:
+            print(f"Error: {e}")
         speak("An error occurred.")
         return None
 
