@@ -516,12 +516,17 @@ def infrared(pattern):
 # -------------------------------------------------------------------
 # Call log and SMS inbox actions (ENHANCED)
 # -------------------------------------------------------------------
-def get_call_log(limit=10):
+def get_call_log(limit=0):
     """Fetch and display recent call log entries using the name field directly."""
     try:
-        result = subprocess.run(["termux-call-log", "-l", str(limit)], 
-                                capture_output=True, text=True, check=True)
-        calls = json.loads(result.stdout)
+        limit = int(limit)
+        # Same as SMS: omitting -l returns empty, -l 0 may misbehave
+        effective_limit = limit if limit > 0 else 9999
+        cmd = ["termux-call-log", "-l", str(effective_limit)]
+        result = subprocess.run(cmd, capture_output=True, check=True)
+        stdout = result.stdout.decode('utf-8', errors='replace')
+        calls = json.loads(stdout)
+        calls = [c for c in calls if isinstance(c, dict)]
         if not calls:
             print("No call log entries found.")
             speak("No recent calls.")
@@ -551,14 +556,20 @@ def get_call_log(limit=10):
         print(f"Unexpected error: {e}")
         speak("Failed to get call log.")
 
-def get_sms_inbox(limit=10, unread_only=False):
+def get_sms_inbox(limit=0, unread_only=False):
     """Fetch and display recent SMS messages using termux-sms-list."""
     try:
-        cmd = ["termux-sms-list", "-l", str(limit)]
+        limit = int(limit)
+        # termux-sms-list without -l returns empty; -l 0 returns malformed data
+        # So use a large number for "all"
+        effective_limit = limit if limit > 0 else 9999
+        cmd = ["termux-sms-list", "-l", str(effective_limit)]
         if unread_only:
             cmd.append("-u")
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        messages = json.loads(result.stdout)
+        result = subprocess.run(cmd, capture_output=True, check=True)
+        stdout = result.stdout.decode('utf-8', errors='replace')
+        messages = json.loads(stdout)
+        messages = [m for m in messages if isinstance(m, dict)]
         if not messages:
             print("No SMS messages found.")
             speak("No messages.")
@@ -611,7 +622,7 @@ def get_sms_inbox(limit=10, unread_only=False):
 # -------------------------------------------------------------------
 # Contacts list action (UPDATED - shows all when limit <= 0)
 # -------------------------------------------------------------------
-def list_contacts(limit=20):
+def list_contacts(limit=0):
     """Fetch and display contacts from termux-contact-list."""
     try:
         contacts = get_contacts()
@@ -922,14 +933,14 @@ def execute_action(decision, context=None):
     elif action == 'infrared':
         infrared(decision.get('pattern'))
     elif action == 'get_call_log':
-        limit = decision.get('limit', 10)
+        limit = decision.get('limit', 0)
         get_call_log(limit)
     elif action == 'get_sms_inbox':
-        limit = decision.get('limit', 10)
+        limit = decision.get('limit', 0)
         unread = decision.get('unread_only', False)
         get_sms_inbox(limit, unread)
     elif action == 'list_contacts':
-        limit = decision.get('limit', 20)
+        limit = decision.get('limit', 0)
         list_contacts(limit)
     elif action == 'show_toast':
         show_toast(decision.get('text'))

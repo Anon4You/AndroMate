@@ -6,8 +6,9 @@ from utils import clean_name, fuzzy_match
 def get_contacts():
     """Fetch contacts using termux-contact-list and return list with cleaned names, phones, emails."""
     try:
-        result = subprocess.run(["termux-contact-list"], capture_output=True, text=True, check=True)
-        contacts_json = json.loads(result.stdout)
+        result = subprocess.run(["termux-contact-list"], capture_output=True, check=True)
+        stdout = result.stdout.decode('utf-8', errors='replace')
+        contacts_json = json.loads(stdout)
         contacts = []
         for c in contacts_json:
             name = c.get('name', '')

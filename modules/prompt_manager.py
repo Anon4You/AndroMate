@@ -43,9 +43,9 @@ scan_wifi      → {"action":"scan_wifi"}
 wifi_enable    → {"action":"wifi_enable","state":"on/off"}
 get_location   → {"action":"get_location"}
 get_device_info→ {"action":"get_device_info"}
-get_call_log   → {"action":"get_call_log","limit":10}
-get_sms_inbox  → {"action":"get_sms_inbox","limit":10,"unread_only":false}
-list_contacts  → {"action":"list_contacts","limit":20}
+get_call_log   → {"action":"get_call_log","limit":N}  (use limit:0 for "all calls")
+get_sms_inbox  → {"action":"get_sms_inbox","limit":N,"unread_only":false}  (use limit:0 for "all messages")
+list_contacts  → {"action":"list_contacts","limit":N}  (use limit:0 for "all contacts")
 run_shell      → {"action":"run_shell","command":"cmd"}
 download_file  → {"action":"download_file","url":"url","destination":"path"}
 generate_image → {"action":"generate_image","prompt":"desc"}
