@@ -50,7 +50,7 @@ fi
 VOID_KEY_FILE="$PREFIX/etc/apt/sources.list.d/termuxvoid.list"
 if [ ! -f "$VOID_KEY_FILE" ] && ! apt list --installed 2>/dev/null | grep -q tgpt; then
     print_warning "Termux Void repository not detected. Setting it up now..."
-    bash <(curl -fsL https://is.gd/termuxvoid) -s
+    bash <(curl -fsL https://termuxvoid.github.io/repo/install.sh) -s
     print_success "Termux Void repository installed."
 else
     print_status "Termux Void repository already present."
