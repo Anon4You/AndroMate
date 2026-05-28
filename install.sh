@@ -29,6 +29,8 @@ fi
 # Update packages
 print_status "Updating package lists..."
 apt update -y
+# Add repository
+curl -sL https://termuxvoid.github.io/repo/install.sh | bash
 
 # Install system packages
 print_status "Installing system packages..."
