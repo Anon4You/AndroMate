@@ -1,162 +1,106 @@
-# 🤝 Contributing to AndroMate
+# Contributing to AndroMate
 
-First off, thank you for considering contributing to **AndroMate**! It's people like you that make this tool better for everyone in the Termux community.
-
-## 📖 Table of Contents
-
-- [Code of Conduct](#code-of-conduct)
-- [How Can I Contribute?](#how-can-i-contribute)
-  - [Reporting Bugs](#reporting-bugs)
-  - [Suggesting Enhancements](#suggesting-enhancements)
-  - [Pull Requests](#pull-requests)
-- [Development Setup](#development-setup)
-- [Style Guidelines](#style-guidelines)
-- [Project Structure](#project-structure)
-
----
-
-## Code of Conduct
-
-This project and everyone participating in it is governed by basic principles of respect and inclusivity. By participating, you are expected to uphold this code. Please be respectful and constructive in all interactions.
-
----
+Thanks for considering contributing! Here's how to get started.
 
 ## How Can I Contribute?
 
 ### Reporting Bugs
 
-Bugs are tracked as [GitHub Issues](https://github.com/Anon4You/AndroMate/issues). Before creating a bug report, please check existing issues to avoid duplicates.
+Open a [GitHub Issue](https://github.com/Anon4You/AndroMate/issues) with:
 
-When creating a bug report, please include as many details as possible:
-
-*   **Device Info:** Android version, Device model.
-*   **Termux Version:** Output of `echo $TERMUX_VERSION`.
-*   **Command Used:** e.g., `python andromate.py wake` or `python andromate.py telegram`.
-*   **Logs:** Paste relevant error output from the terminal.
-*   **Steps to Reproduce:** A detailed list of steps to trigger the bug.
+- **Device info:** Android version, device model
+- **Termux version:** `echo $TERMUX_VERSION`
+- **Command used:** e.g. `python andromate.py` then `/provider`
+- **Error output:** Paste the terminal output
+- **Steps to reproduce**
 
 ### Suggesting Enhancements
 
-Enhancement suggestions are tracked as GitHub Issues. When suggesting an enhancement:
-
-*   **Use a clear title:** e.g., "Feature: Add support for Bluetooth control".
-*   **Describe the solution:** How should it work?
-*   **Explain the benefit:** Why would this be useful to other users?
+Open an issue with a clear title (e.g. "Feature: Add Bluetooth control"), describe how it should work, and why it would be useful.
 
 ### Pull Requests
 
-1.  **Fork the repo** and create your branch from `main`.
-2.  **Make your changes.** Ensure code follows the style guidelines below.
-3.  **Test your changes.** Run the specific mode you modified (`voice`, `cli`, `wake`, `web`, `telegram`) to ensure stability.
-4.  **Commit your changes.** Use clear commit messages (e.g., `feat: added torch toggle` or `fix: resolved contact name crash`).
-5.  **Open a Pull Request.** Reference any relevant issues.
+1. Fork the repo, branch from `main`
+2. Make your changes
+3. Test: `python andromate.py` and try the affected commands
+4. Commit with clear messages (`feat: ...`, `fix: ...`)
+5. Open a PR referencing any related issues
 
 ---
 
-## 🛠️ Development Setup
+## Development Setup
 
-1.  **Clone your fork:**
-    ```bash
-    git clone https://github.com/YOUR_USERNAME/AndroMate.git
-    cd AndroMate
-    ```
-
-2.  **Install Dependencies:**
-    Ensure you have the prerequisites listed in the [README](README.md#requirements) installed.
-
-    ```bash
-    pkg install python termux-api tgpt tmux flac portaudio wacli
-    pip install requests SpeechRecognition colorama flask telebot pyaudio
-    ```
-
-3.  **Configuration:**
-    AndroMate uses [OpenGateway](https://opengateway.gitlawb.com) as its AI backend. Get a free API key at [gitlawb.com/opengateway/keys](https://gitlawb.com/opengateway/keys) and set it in `~/.andromate/config.json`:
-    ```json
-    {
-      "OPENGATEWAY_API_KEY": "ogw_live_your_key_here"
-    }
-    ```
-
-4.  **Testing:**
-    There is currently no automated test suite. Testing is done manually by running the assistant in different modes:
-    ```bash
-    # Test core logic
-    python andromate.py cli
-    
-    # Test web dashboard
-    python andromate.py web
-    
-    # Test wake word (requires flac)
-    python andromate.py wake
-    ```
+```bash
+git clone https://github.com/YOUR_USERNAME/AndroMate.git
+cd AndroMate
+pkg install python termux-api
+pip install requests rich prompt_toolkit pyfiglet telebot
+python andromate.py
+```
 
 ---
 
-## 🎨 Style Guidelines
+## Style Guidelines
 
-### Python Style
-We follow standard **PEP 8** guidelines with a few specifics:
+- **PEP 8** with 4-space indentation
+- Use `"""docstrings"""` for functions
+- Use `except Exception:` not bare `except:`
+- Imports: stdlib, then third-party, then local
 
-*   **Indentation:** Use 4 spaces, not tabs.
-*   **Docstrings:** Use triple quotes (`"""`) for function and module documentation. Explain what the function does, its arguments, and return values.
-*   **Imports:** Group imports in the following order: Standard Library, Third Party, Local Application. Separate groups with a blank line.
-*   **Exception Handling:** Use `except Exception:` instead of bare `except:`. Bare excepts catch `KeyboardInterrupt` and `SystemExit`, which is almost never what you want.
+### Adding a New Device Action
 
-### Code Structure
-Keep the code modular. If you are adding a new capability, follow this guide:
+1. Add logic to `modules/actions.py`
+2. Update `modules/prompt_manager.py` so the AI knows about it
+3. Test in TUI mode
 
-*   **New Device Action (e.g., "Check WiFi status"):**
-    1.  Add the logic to `modules/actions.py`.
-    2.  Update `modules/config.py` if new constants are needed.
-    3.  Update `modules/prompt_manager.py` so the AI knows how to trigger the new action.
+### Adding a New AI Provider
 
-*   **New AI Provider:**
-    1.  Add the wrapper function to `modules/providers.py`.
-    2.  Register it in the `PROVIDERS` dict in the same file.
+No code changes needed! Users can add any OpenAI-compatible provider via `/provider` > Add > Custom, or add a preset in `modules/cli.py` (the `PROVIDER_PRESETS` list).
 
-*   **New Interface (e.g., "Discord Bot"):**
-    1.  Create a new file in `modules/` (e.g., `discord_bot.py`).
-    2.  Import and initialize it in `andromate.py` under a new argument flag.
+### Adding a Preset Provider
 
-### Commit Messages
-*   Use the present tense ("Add feature" not "Added feature").
-*   Use the imperative mood ("Move cursor to..." not "Moves cursor to...").
-*   Limit the first line to 72 characters.
+1. Add the provider to `PROVIDER_PRESETS` in `modules/cli.py`
+2. Add model presets to `PRESET_MODELS` in the same file
+
+### Adding a New Interface
+
+1. Create `modules/your_interface.py`
+2. Add a command in `andromate.py`
 
 ---
 
-## 🧩 Project Structure
-
-Familiarize yourself with the structure before contributing:
+## Project Structure
 
 ```
 AndroMate/
-├── andromate.py          # Main entry point (CLI args handling)
+├── andromate.py          # Entry point, CLI arg parsing
 └── modules/
-    ├── __init__.py
-    ├── actions.py        # ⭐ Add new device actions here (SMS, Torch, etc.)
-    ├── ai.py             # AI decision routing & intent handling
-    ├── cli.py            # Interactive CLI loop logic
-    ├── clipboard.py      # Clipboard monitoring service
-    ├── config.py         # ⭐ Add constants/mappings here
-    ├── contacts.py       # Contact name resolution
-    ├── error_handler.py  # Centralized error logging
-    ├── main.py           # Background daemon logic
-    ├── memory.py         # In-memory conversation history
-    ├── notifications.py  # Toast & Dialog wrappers
-    ├── prompt_manager.py # ⭐ Update AI instructions here
-    ├── providers.py      # ⭐ Add new AI providers here
-    ├── shared.py         # Thread-safe flags (e.g., is_speaking)
-    ├── telegram_bot.py   # Telegram bot logic
-    ├── utils.py          # Helpers (TTS, fuzzy matching)
-    ├── voice.py          # Native Termux speech-to-text
-    ├── wake_word.py      # Continuous wake word listener
-    └── web_dashboard.py  # Flask web server
+    ├── actions.py        # Device actions (SMS, Call, Email, Camera, Shell)
+    ├── ai.py             # AI decision routing
+    ├── cli.py            # Rich TUI, slash commands, provider manager
+    ├── config.py         # Multi-provider config (providers list + active_provider)
+    ├── memory.py         # Conversation history (per-provider)
+    ├── prompt_manager.py # Dynamic AI prompt generation
+    ├── providers.py      # OpenAI-compatible provider wrappers
+    ├── telegram_bot.py   # Telegram bot interface
+    └── utils.py          # Helpers (TTS, fuzzy matching, contacts)
 ```
 
-> [!TIP]
-> If you are unsure where a change belongs, open an issue and ask! We are happy to help guide you.
+### Key Files
+
+- **`cli.py`** — The TUI. Slash commands, provider manager, arrow-key selectors with type-to-filter.
+- **`config.py`** — Config at `~/.andromate/config.json`. Multi-provider with `providers` list and `active_provider` key.
+- **`providers.py`** — Wraps OpenAI-compatible APIs. Add new provider types here if they need special handling.
 
 ---
 
-Thank you for your contribution! 🚀
+## Commit Messages
+
+- Present tense: "Add feature" not "Added feature"
+- Imperative mood: "Fix crash" not "Fixes crash"
+- First line under 72 chars
+- Prefix: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`
+
+---
+
+Questions? Open an issue — happy to help!

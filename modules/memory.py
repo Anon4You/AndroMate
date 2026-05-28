@@ -36,6 +36,17 @@ def get_history() -> str:
         lines.append(f"{prefix}: {content}")
     return "\n".join(lines)
 
+
+def get_history_messages() -> list:
+    """Return conversation history as structured messages for OpenAI-compatible API."""
+    messages = []
+    for role, content in _history:
+        if role == 'user':
+            messages.append({"role": "user", "content": content})
+        else:
+            messages.append({"role": "assistant", "content": content})
+    return messages
+
 def clear():
     """Clear conversation history."""
     _history.clear()

@@ -1,14 +1,6 @@
 # modules/prompt_manager.py
 
-def get_prompt(user_input, context, history="", auto_context=""):
-    """
-    Build the prompt for the AI.
-    :param user_input: the user's current input
-    :param context: where the command came from (voice, cli, telegram, web)
-    :param history: optional conversation history
-    :param auto_context: optional automatic context like time
-    """
-    system = """You are AndroMate, an AI assistant running on Android in Termux.
+SYSTEM_PROMPT = """You are AndroMate, an AI assistant running on Android in Termux.
 You MUST respond with ONLY a valid JSON object with an "action" field. No markdown, no explanation.
 
 CORE RULES:
@@ -51,9 +43,6 @@ download_file  → {"action":"download_file","url":"url","destination":"path"}
 generate_image → {"action":"generate_image","prompt":"desc"}
 fingerprint    → {"action":"fingerprint"}
 infrared       → {"action":"infrared","pattern":"csv"}
-list_providers → {"action":"list_providers"}
-set_provider   → {"action":"set_provider","provider":"name"}
-get_current_provider → {"action":"get_current_provider"}
 reply          → {"action":"reply","response":"text"}
 
 EXAMPLES (especially for tricky cases):
@@ -84,10 +73,25 @@ User: "generate an image of a cat"
 User: "who is this" / "what can you do"
 → {"action":"reply","response":"I'm AndroMate — I can send messages, make calls, control your device, generate images, and more. What do you need?"}"""
 
+
+def get_system_prompt(context="general", auto_context=""):
+    """
+    Return the system prompt string for use in structured messages.
+    """
+    suffix = f"\n\nContext: {context}"
+    if auto_context:
+        suffix += f"\n{auto_context}"
+    return SYSTEM_PROMPT + suffix
+
+
+def get_prompt(user_input, context, history="", auto_context=""):
+    """
+    Build a single combined prompt string (legacy mode for voice/wake/telegram).
+    """
+    system = SYSTEM_PROMPT
     user = f"""{auto_context}{history}
 ---
 Context: {context}
 User: "{user_input}"
 Output ONLY the JSON:"""
-
     return system + "\n\n" + user

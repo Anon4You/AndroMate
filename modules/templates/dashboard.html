@@ -3,70 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AndroMate · AI Assistant</title>
+    <title>AndroMate</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="chat-card">
-        <!-- Sidebar -->
+    <div class="app-shell">
+        <!-- Sidebar (desktop only) -->
         <div class="sidebar">
             <div class="logo-area">
                 <div class="logo-icon"><i class="fas fa-robot"></i></div>
                 <div class="logo-text">
                     <h2>AndroMate</h2>
-                    <p>local · private · fast</p>
+                    <p>local &middot; private &middot; fast</p>
                 </div>
             </div>
+
             <div class="status-panel">
                 <div class="status-item">
                     <div class="status-icon"><i class="fas fa-bolt"></i></div>
                     <div class="status-info">
                         <div class="status-label">Battery</div>
-                        <div class="status-value" id="batteryValue"><small>—</small></div>
+                        <div class="status-value" id="batteryValue"><small>&mdash;</small></div>
                     </div>
                 </div>
                 <div class="status-item">
                     <div class="status-icon"><i class="fas fa-wifi"></i></div>
                     <div class="status-info">
                         <div class="status-label">WiFi</div>
-                        <div class="status-value" id="wifiValue">—</div>
+                        <div class="status-value" id="wifiValue">&mdash;</div>
                     </div>
                 </div>
             </div>
+
+            <div class="active-provider-box" id="sidebarProvider">
+                <div class="ap-label"><i class="fas fa-server"></i> Active Provider</div>
+                <div class="ap-name" id="apName">Loading...</div>
+                <div class="ap-model" id="apModel"></div>
+            </div>
+
             <div class="tip-box">
                 <i class="fas fa-lightbulb"></i>
-                <p><strong>Try:</strong> "battery level", "open YouTube", "take a selfie", "send email", "generate image"</p>
+                <p><strong>Try:</strong> "battery level", "open YouTube", "take a selfie", "send email"</p>
             </div>
         </div>
 
-        <!-- Main chat -->
-        <div class="main-chat">
-            <div class="chat-header">
-                <div class="chat-header-left">
-                    <i class="fas fa-comment-dots" style="color: var(--accent-primary);"></i>
-                    <h3>Conversation</h3>
-                    <span class="status-dot" title="Online"></span>
-                </div>
-                <div class="chat-header-actions">
-                    <button class="header-btn" onclick="toggleSearch()" title="Search messages"><i class="fas fa-search"></i></button>
-                    <button class="header-btn" onclick="exportChat()" title="Export chat"><i class="fas fa-download"></i></button>
-                    <button class="header-btn" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon" id="themeIcon"></i></button>
-                    <button class="header-btn" onclick="clearChat()" title="Clear chat"><i class="fas fa-trash"></i></button>
+        <!-- Main content -->
+        <div class="main-content">
+            <!-- Tab bar -->
+            <div class="tab-bar">
+                <button class="tab-btn active" data-tab="chat" onclick="switchTab('chat')">
+                    <i class="fas fa-comment-dots"></i> Chat
+                </button>
+                <button class="tab-btn" data-tab="providers" onclick="switchTab('providers')">
+                    <i class="fas fa-server"></i> Providers
+                </button>
+                <div class="tab-spacer"></div>
+                <div class="tab-actions">
+                    <button class="header-btn" onclick="toggleSearch()" title="Search"><i class="fas fa-search"></i></button>
+                    <button class="header-btn" onclick="exportChat()" title="Export"><i class="fas fa-download"></i></button>
+                    <button class="header-btn" onclick="toggleTheme()" title="Theme"><i class="fas fa-moon" id="themeIcon"></i></button>
+                    <button class="header-btn" onclick="clearChat()" title="Clear"><i class="fas fa-trash"></i></button>
                     <button class="header-btn" onclick="toggleSettings()" title="Settings"><i class="fas fa-cog"></i></button>
                 </div>
             </div>
 
-            <!-- Search bar -->
-            <div class="search-bar" id="searchBar" style="display: none;">
-                <input type="text" id="searchInput" placeholder="Search messages..." onkeyup="searchMessages()">
-                <button onclick="toggleSearch()"><i class="fas fa-times"></i></button>
+            <!-- Chat Panel -->
+            <div class="tab-panel active" id="panel-chat">
+                <div class="search-bar" id="searchBar" style="display: none;">
+                    <input type="text" id="searchInput" placeholder="Search messages..." onkeyup="searchMessages()">
+                    <button onclick="toggleSearch()"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="messages-container" id="chat"></div>
+
+                <div class="input-area">
+                    <div class="input-wrapper">
+                        <input type="text" id="command" placeholder="Type a message..." autofocus>
+                        <button id="sendBtn"><i class="fas fa-arrow-up"></i></button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Messages container -->
-            <div class="messages-container" id="chat">
-                <!-- Messages inserted via JS -->
+            <!-- Providers Panel -->
+            <div class="tab-panel" id="panel-providers">
+                <div class="providers-panel">
+                    <div class="providers-header">
+                        <h3><i class="fas fa-server"></i> AI Providers</h3>
+                        <button class="btn-add" onclick="openAddModal()"><i class="fas fa-plus"></i> Add Provider</button>
+                    </div>
+                    <div class="providers-grid" id="providerGrid">
+                        <!-- filled by JS -->
+                    </div>
+                </div>
             </div>
 
             <!-- Settings panel -->
@@ -77,25 +107,16 @@
                 </div>
                 <div class="settings-content">
                     <div class="setting-item">
-                        <label>Auto-scroll to new messages</label>
-                        <label class="toggle">
-                            <input type="checkbox" id="autoScrollToggle" checked onchange="saveSettings()">
-                            <span class="slider"></span>
-                        </label>
+                        <label>Auto-scroll</label>
+                        <label class="toggle"><input type="checkbox" id="autoScrollToggle" checked onchange="saveSettings()"><span class="slider"></span></label>
                     </div>
                     <div class="setting-item">
-                        <label>Save chat history</label>
-                        <label class="toggle">
-                            <input type="checkbox" id="saveHistoryToggle" checked onchange="saveSettings()">
-                            <span class="slider"></span>
-                        </label>
+                        <label>Save history</label>
+                        <label class="toggle"><input type="checkbox" id="saveHistoryToggle" checked onchange="saveSettings()"><span class="slider"></span></label>
                     </div>
                     <div class="setting-item">
-                        <label>Enter key sends message</label>
-                        <label class="toggle">
-                            <input type="checkbox" id="enterKeyToggle" checked onchange="saveSettings()">
-                            <span class="slider"></span>
-                        </label>
+                        <label>Enter to send</label>
+                        <label class="toggle"><input type="checkbox" id="enterKeyToggle" checked onchange="saveSettings()"><span class="slider"></span></label>
                     </div>
                     <div class="setting-actions">
                         <button onclick="importChat()" class="settings-btn"><i class="fas fa-upload"></i> Import Chat</button>
@@ -103,541 +124,414 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <input type="text" id="command" placeholder="Type a message..." autofocus>
-                    <button class="attach-btn" title="Attach file"><i class="fas fa-paperclip"></i></button>
-                    <button id="sendBtn"><i class="fas fa-arrow-up"></i></button>
+        <!-- Mobile bottom nav -->
+        <div class="mobile-nav">
+            <button class="nav-btn active" data-tab="chat" onclick="switchTab('chat')">
+                <i class="fas fa-comment-dots"></i> Chat
+            </button>
+            <button class="nav-btn" data-tab="providers" onclick="switchTab('providers')">
+                <i class="fas fa-server"></i> Providers
+            </button>
+        </div>
+    </div>
+
+    <!-- Add/Edit Provider Modal -->
+    <div class="modal-overlay" id="providerModal" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add Provider</h3>
+                <button class="icon-btn" onclick="closeModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="preset-chips" id="presetChips">
+                    <!-- filled by JS -->
                 </div>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="modalName" placeholder="e.g. openrouter">
+                </div>
+                <div class="form-group">
+                    <label>Base URL</label>
+                    <input type="text" id="modalUrl" placeholder="https://api.example.com/v1">
+                </div>
+                <div class="form-group">
+                    <label>Model</label>
+                    <select id="modalModelSelect" style="display:none;"></select>
+                    <input type="text" id="modalModel" placeholder="e.g. gpt-4o">
+                </div>
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" id="modalKey" placeholder="sk-...">
+                </div>
+                <div class="modal-error" id="modalError"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="modalSaveBtn" onclick="saveProvider()">Save</button>
             </div>
         </div>
     </div>
 
-    <!-- Toast notification -->
+    <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <script>
+        // ── State ──────────────────────────────────────────────
         const chat = document.getElementById('chat');
         const commandInput = document.getElementById('command');
         const sendBtn = document.getElementById('sendBtn');
         const batterySpan = document.getElementById('batteryValue');
         const wifiSpan = document.getElementById('wifiValue');
         const themeIcon = document.getElementById('themeIcon');
-        let isTyping = false;
-        let messageHistory = [];
-        let autoScroll = true;
-        let saveHistory = true;
-        let enterKeyEnabled = true;
-        let isDarkTheme = true;
+        let isTyping = false, messageHistory = [], autoScroll = true, saveHistory = true, enterKeyEnabled = true, isDarkTheme = true;
+        let editingProvider = null;
+        let presets = [], presetModels = {};
 
-        // Initialize
+        // ── Init ───────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
-            loadSettings();
-            loadChatHistory();
-            applyTheme();
+            loadSettings(); loadChatHistory(); applyTheme(); loadProviders(); loadPresets();
         });
 
-        // Load settings from localStorage
-        function loadSettings() {
-            const settings = JSON.parse(localStorage.getItem('andromate_settings') || '{}');
-            autoScroll = settings.autoScroll !== false;
-            saveHistory = settings.saveHistory !== false;
-            enterKeyEnabled = settings.enterKey !== false;
-            isDarkTheme = settings.darkTheme !== false;
+        // ── Tabs ───────────────────────────────────────────────
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${tab}`));
+            document.querySelectorAll('.mobile-nav .nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            if (tab === 'providers') loadProviders();
+            if (tab === 'chat') commandInput.focus();
+        }
 
+        // ── Settings ───────────────────────────────────────────
+        function loadSettings() {
+            const s = JSON.parse(localStorage.getItem('andromate_settings') || '{}');
+            autoScroll = s.autoScroll !== false; saveHistory = s.saveHistory !== false;
+            enterKeyEnabled = s.enterKey !== false; isDarkTheme = s.darkTheme !== false;
             document.getElementById('autoScrollToggle').checked = autoScroll;
             document.getElementById('saveHistoryToggle').checked = saveHistory;
             document.getElementById('enterKeyToggle').checked = enterKeyEnabled;
         }
-
-        // Save settings to localStorage
         function saveSettings() {
             autoScroll = document.getElementById('autoScrollToggle').checked;
             saveHistory = document.getElementById('saveHistoryToggle').checked;
             enterKeyEnabled = document.getElementById('enterKeyToggle').checked;
-
-            localStorage.setItem('andromate_settings', JSON.stringify({
-                autoScroll,
-                saveHistory,
-                enterKey: enterKeyEnabled,
-                darkTheme: isDarkTheme
-            }));
+            localStorage.setItem('andromate_settings', JSON.stringify({ autoScroll, saveHistory, enterKey: enterKeyEnabled, darkTheme: isDarkTheme }));
         }
-
-        // Toggle theme
         function toggleTheme() {
             isDarkTheme = !isDarkTheme;
             themeIcon.className = isDarkTheme ? 'fas fa-moon' : 'fas fa-sun';
             document.body.classList.toggle('light-theme', !isDarkTheme);
             saveSettings();
         }
-
-        // Apply theme
         function applyTheme() {
             themeIcon.className = isDarkTheme ? 'fas fa-moon' : 'fas fa-sun';
             document.body.classList.toggle('light-theme', !isDarkTheme);
         }
-
-        // Toggle settings panel
-        function toggleSettings() {
-            const panel = document.getElementById('settingsPanel');
-            panel.classList.toggle('open');
-        }
-
-        // Toggle search
+        function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('open'); }
         function toggleSearch() {
-            const searchBar = document.getElementById('searchBar');
-            searchBar.style.display = searchBar.style.display === 'none' ? 'flex' : 'none';
-            if (searchBar.style.display === 'flex') {
-                document.getElementById('searchInput').focus();
-            }
+            const sb = document.getElementById('searchBar');
+            sb.style.display = sb.style.display === 'none' ? 'flex' : 'none';
+            if (sb.style.display === 'flex') document.getElementById('searchInput').focus();
         }
-
-        // Search messages
         function searchMessages() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const messages = chat.querySelectorAll('.message-row');
-
-            messages.forEach(msg => {
-                const text = msg.querySelector('.bubble').textContent.toLowerCase();
-                if (query === '' || text.includes(query)) {
-                    msg.style.display = 'flex';
-                } else {
-                    msg.style.display = 'none';
-                }
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            chat.querySelectorAll('.message-row').forEach(m => {
+                m.style.display = (!q || m.querySelector('.bubble').textContent.toLowerCase().includes(q)) ? 'flex' : 'none';
             });
         }
-
-        // Show toast notification
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast ${type} show`;
-            setTimeout(() => toast.classList.remove('show'), 3000);
+        function showToast(msg, type = 'info') {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.className = `toast ${type} show`;
+            setTimeout(() => t.classList.remove('show'), 3000);
         }
 
-        // Add message to chat
-        function addMessage(sender, text, isError = false, saveToHistory = true) {
+        // ── Messages ───────────────────────────────────────────
+        function addMessage(sender, text, isError = false, save = true) {
             const row = document.createElement('div');
-            row.className = `message-row ${sender}`;
-            row.dataset.timestamp = Date.now();
-
+            row.className = `message-row ${sender}`; row.dataset.timestamp = Date.now();
             const avatar = document.createElement('div');
             avatar.className = `avatar ${sender}`;
             avatar.innerHTML = sender === 'assistant' ? '<i class="fas fa-robot"></i>' : '<i class="fas fa-user"></i>';
-
             const bubble = document.createElement('div');
             bubble.className = `bubble ${sender}${isError ? ' error' : ''}`;
-
-            // Add message actions
             const actions = document.createElement('div');
             actions.className = 'message-actions';
-            actions.innerHTML = `
-                <button class="action-btn" onclick="copyMessage(this)" title="Copy"><i class="fas fa-copy"></i></button>
-                <button class="action-btn" onclick="editMessage(this)" title="Edit"><i class="fas fa-edit"></i></button>
-                <button class="action-btn" onclick="deleteMessage(this)" title="Delete"><i class="fas fa-trash"></i></button>
-            `;
+            actions.innerHTML = `<button class="action-btn" onclick="copyMessage(this)" title="Copy"><i class="fas fa-copy"></i></button><button class="action-btn" onclick="deleteMessage(this)" title="Delete"><i class="fas fa-trash"></i></button>`;
             bubble.appendChild(actions);
-
-            // Parse markdown with code block support
-            const parsedContent = parseMarkdown(text);
-            bubble.appendChild(parsedContent);
-
+            bubble.appendChild(parseMarkdown(text));
             const time = document.createElement('div');
-            time.className = 'timestamp';
-            time.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            time.className = 'timestamp'; time.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             bubble.appendChild(time);
-
-            if (sender === 'assistant') {
-                row.appendChild(avatar);
-                row.appendChild(bubble);
-            } else {
-                row.appendChild(bubble);
-                row.appendChild(avatar);
-            }
+            if (sender === 'assistant') { row.appendChild(avatar); row.appendChild(bubble); }
+            else { row.appendChild(bubble); row.appendChild(avatar); }
             chat.appendChild(row);
-
-            if (autoScroll) {
-                chat.scrollTop = chat.scrollHeight;
-            }
-
-            // Save to history
-            if (saveHistory && saveToHistory) {
-                messageHistory.push({ sender, text, isError, timestamp: Date.now() });
-                localStorage.setItem('andromate_history', JSON.stringify(messageHistory));
-            }
-
+            if (autoScroll) chat.scrollTop = chat.scrollHeight;
+            if (saveHistory && save) { messageHistory.push({ sender, text, isError, timestamp: Date.now() }); localStorage.setItem('andromate_history', JSON.stringify(messageHistory)); }
             return row;
         }
-
-        // Copy message text
         function copyMessage(btn) {
-            const bubble = btn.closest('.bubble');
-            const markdownContent = bubble.querySelector('.markdown-content');
-            const text = markdownContent ? markdownContent.textContent : bubble.textContent;
-            // Remove timestamp and actions from text
-            const cleanText = text.replace(/[\u200b]/g, '').trim();
-
-            navigator.clipboard.writeText(cleanText).then(() => {
-                showToast('Message copied!', 'success');
-            }).catch(err => {
-                showToast('Failed to copy', 'error');
-            });
+            const b = btn.closest('.bubble'), mc = b.querySelector('.markdown-content');
+            navigator.clipboard.writeText((mc || b).textContent.trim()).then(() => showToast('Copied!', 'success'));
         }
-
-        // Edit message (resend)
-        function editMessage(btn) {
-            const bubble = btn.closest('.bubble');
-            const markdownContent = bubble.querySelector('.markdown-content');
-            const text = markdownContent ? markdownContent.textContent : bubble.textContent;
-            const cleanText = text.replace(/[\u200b]/g, '').trim();
-
-            commandInput.value = cleanText;
-            commandInput.focus();
-
-            // Delete the original message
-            deleteMessage(btn);
-        }
-
-        // Delete message
         function deleteMessage(btn) {
             const row = btn.closest('.message-row');
-
-            // Remove from history
-            const timestamp = parseInt(row.dataset.timestamp);
-            const index = messageHistory.findIndex(m => m.timestamp === timestamp);
-            if (index !== -1) {
-                messageHistory.splice(index, 1);
-                localStorage.setItem('andromate_history', JSON.stringify(messageHistory));
-            }
-
-            row.remove();
-            showToast('Message deleted', 'info');
+            const ts = parseInt(row.dataset.timestamp), i = messageHistory.findIndex(m => m.timestamp === ts);
+            if (i !== -1) { messageHistory.splice(i, 1); localStorage.setItem('andromate_history', JSON.stringify(messageHistory)); }
+            row.remove(); showToast('Deleted', 'info');
         }
-
-        // Parse markdown text into DOM nodes
         function parseMarkdown(text) {
-            const container = document.createElement('div');
-            container.className = 'markdown-content';
-
-            // Split by code blocks first
-            const parts = text.split(/(```[\s\S]*?```)/g);
-
-            parts.forEach(part => {
-                if (part.startsWith('```') && part.endsWith('```')) {
-                    const codeBlock = createCodeBlock(part);
-                    container.appendChild(codeBlock);
-                } else {
-                    const textBlock = parseInlineMarkdown(part);
-                    if (textBlock.childNodes.length > 0) {
-                        container.appendChild(textBlock);
-                    }
-                }
+            const c = document.createElement('div'); c.className = 'markdown-content';
+            text.split(/(```[\s\S]*?```)/g).forEach(p => {
+                if (p.startsWith('```') && p.endsWith('```')) c.appendChild(createCodeBlock(p));
+                else { const t = parseInline(p); if (t.childNodes.length) c.appendChild(t); }
             });
-
-            return container;
+            return c;
         }
-
-        // Create code block element with copy button
-        function createCodeBlock(codeText) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'code-block-wrapper';
-
-            const match = codeText.match(/^```(\w*)\n([\s\S]*?)```$/);
-            const language = match && match[1] ? match[1] : 'code';
-            const code = match && match[2] ? match[2].trim() : codeText.replace(/^```|```$/g, '').trim();
-
-            const header = document.createElement('div');
-            header.className = 'code-block-header';
-
-            const langSpan = document.createElement('span');
-            langSpan.className = 'code-language';
-            langSpan.textContent = language;
-            header.appendChild(langSpan);
-
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'copy-code-btn';
-            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy code';
-            copyBtn.onclick = () => copyCode(code, copyBtn);
-            header.appendChild(copyBtn);
-
-            const pre = document.createElement('pre');
-            const codeEl = document.createElement('code');
-            codeEl.className = `language-${language}`;
-            codeEl.textContent = code;
-            pre.appendChild(codeEl);
-
-            wrapper.appendChild(header);
-            wrapper.appendChild(pre);
-
-            return wrapper;
+        function createCodeBlock(ct) {
+            const w = document.createElement('div'); w.className = 'code-block-wrapper';
+            const m = ct.match(/^```(\w*)\n([\s\S]*?)```$/);
+            const lang = m?.[1] || 'code', code = m?.[2]?.trim() || ct.replace(/^```|```$/g, '').trim();
+            const h = document.createElement('div'); h.className = 'code-block-header';
+            const ls = document.createElement('span'); ls.className = 'code-language'; ls.textContent = lang; h.appendChild(ls);
+            const cb = document.createElement('button'); cb.className = 'copy-code-btn'; cb.innerHTML = '<i class="fas fa-copy"></i> Copy';
+            cb.onclick = () => navigator.clipboard.writeText(code).then(() => { cb.innerHTML = '<i class="fas fa-check"></i> Copied'; cb.classList.add('copied'); setTimeout(() => { cb.innerHTML = '<i class="fas fa-copy"></i> Copy'; cb.classList.remove('copied'); }, 2000); });
+            h.appendChild(cb);
+            const pre = document.createElement('pre'), ce = document.createElement('code'); ce.textContent = code; pre.appendChild(ce);
+            w.appendChild(h); w.appendChild(pre); return w;
         }
-
-        // Copy code to clipboard
-        function copyCode(code, btn) {
-            navigator.clipboard.writeText(code).then(() => {
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                btn.classList.add('copied');
-                showToast('Code copied!', 'success');
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                    btn.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-                btn.innerHTML = '<i class="fas fa-times"></i> Failed';
-                setTimeout(() => {
-                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy code';
-                }, 2000);
-            });
+        function parseInline(text) {
+            const c = document.createElement('div');
+            if (!text.trim()) return c;
+            c.innerHTML = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`([^`]+)`/g,'<code class="inline-code">$1</code>').replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank">$1</a>').replace(/\n/g,'<br>');
+            return c;
         }
-
-        // Parse inline markdown
-        function parseInlineMarkdown(text) {
-            const container = document.createElement('div');
-            if (!text.trim()) return container;
-
-            let html = text
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
-                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-                .replace(/\n/g, '<br>');
-
-            container.innerHTML = html;
-            return container;
+        function addImageMessage(url) {
+            const row = document.createElement('div'); row.className = 'message-row assistant'; row.dataset.timestamp = Date.now();
+            const av = document.createElement('div'); av.className = 'avatar assistant'; av.innerHTML = '<i class="fas fa-robot"></i>';
+            const b = document.createElement('div'); b.className = 'bubble assistant';
+            const img = document.createElement('img'); img.src = url; img.style.maxWidth = '100%'; img.style.borderRadius = '12px'; b.appendChild(img);
+            const t = document.createElement('div'); t.className = 'timestamp'; t.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); b.appendChild(t);
+            row.appendChild(av); row.appendChild(b); chat.appendChild(row);
+            if (autoScroll) chat.scrollTop = chat.scrollHeight;
         }
-
-        // Add image message
-        function addImageMessage(imageUrl) {
-            const row = document.createElement('div');
-            row.className = 'message-row assistant';
-            row.dataset.timestamp = Date.now();
-
-            const avatar = document.createElement('div');
-            avatar.className = 'avatar assistant';
-            avatar.innerHTML = '<i class="fas fa-robot"></i>';
-
-            const bubble = document.createElement('div');
-            bubble.className = 'bubble assistant';
-
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            img.style.maxWidth = '100%';
-            img.style.borderRadius = '12px';
-            img.style.marginBottom = '8px';
-            img.onerror = () => {
-                bubble.innerHTML += '<br><small style="color:var(--error)">Image failed to load</small>';
-            };
-            bubble.appendChild(img);
-
-            const time = document.createElement('div');
-            time.className = 'timestamp';
-            time.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            bubble.appendChild(time);
-
-            row.appendChild(avatar);
-            row.appendChild(bubble);
-            chat.appendChild(row);
-
-            if (autoScroll) {
-                chat.scrollTop = chat.scrollHeight;
-            }
-        }
-
-        // Show typing indicator
         function showTyping() {
-            if (isTyping) return;
-            isTyping = true;
-
-            const row = document.createElement('div');
-            row.className = 'message-row assistant';
-            row.id = 'typingIndicator';
-
-            const avatar = document.createElement('div');
-            avatar.className = 'avatar assistant';
-            avatar.innerHTML = '<i class="fas fa-robot"></i>';
-
-            const indicator = document.createElement('div');
-            indicator.className = 'typing-indicator';
-            indicator.innerHTML = '<span></span><span></span><span></span>';
-
-            row.appendChild(avatar);
-            row.appendChild(indicator);
-            chat.appendChild(row);
-            if (autoScroll) {
-                chat.scrollTop = chat.scrollHeight;
-            }
+            if (isTyping) return; isTyping = true;
+            const row = document.createElement('div'); row.className = 'message-row assistant'; row.id = 'typingIndicator';
+            const av = document.createElement('div'); av.className = 'avatar assistant'; av.innerHTML = '<i class="fas fa-robot"></i>';
+            const ind = document.createElement('div'); ind.className = 'typing-indicator'; ind.innerHTML = '<span></span><span></span><span></span>';
+            row.appendChild(av); row.appendChild(ind); chat.appendChild(row);
+            if (autoScroll) chat.scrollTop = chat.scrollHeight;
         }
-
-        // Remove typing indicator
-        function hideTyping() {
-            const indicator = document.getElementById('typingIndicator');
-            if (indicator) indicator.remove();
-            isTyping = false;
-        }
-
-        // Clear chat
+        function hideTyping() { const i = document.getElementById('typingIndicator'); if (i) i.remove(); isTyping = false; }
         function clearChat() {
-            if (confirm('Are you sure you want to clear the chat history?')) {
-                chat.innerHTML = '';
-                messageHistory = [];
-                if (saveHistory) {
-                    localStorage.setItem('andromate_history', JSON.stringify(messageHistory));
-                }
-                addMessage('assistant', 'Chat cleared. How can I help you?', false, false);
-                showToast('Chat cleared', 'info');
-            }
+            if (!confirm('Clear chat history?')) return;
+            chat.innerHTML = ''; messageHistory = [];
+            if (saveHistory) localStorage.setItem('andromate_history', JSON.stringify(messageHistory));
+            addMessage('assistant', 'Chat cleared.', false, false); showToast('Cleared', 'info');
         }
-
-        // Load chat history from localStorage
         function loadChatHistory() {
             if (!saveHistory) return;
-
             const saved = localStorage.getItem('andromate_history');
-            if (saved) {
-                try {
-                    messageHistory = JSON.parse(saved);
-                    messageHistory.forEach(msg => {
-                        addMessage(msg.sender, msg.text, msg.isError, false);
-                    });
-                } catch (e) {
-                    console.error('Failed to load history:', e);
-                }
-            }
-
-            if (messageHistory.length === 0) {
-                addMessage('assistant', 'Hello! I\'m **AndroMate**. How can I assist you today?', false, false);
-            }
+            if (saved) { try { messageHistory = JSON.parse(saved); messageHistory.forEach(m => addMessage(m.sender, m.text, m.isError, false)); } catch(e) {} }
+            if (!messageHistory.length) addMessage('assistant', "Hello! I'm **AndroMate**. How can I help?", false, false);
         }
-
-        // Export chat as JSON
         function exportChat() {
-            const data = {
-                exportDate: new Date().toISOString(),
-                messages: messageHistory
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `andromate-chat-${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('Chat exported!', 'success');
+            const blob = new Blob([JSON.stringify({ exportDate: new Date().toISOString(), messages: messageHistory }, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `andromate-${new Date().toISOString().split('T')[0]}.json`; a.click();
+            showToast('Exported!', 'success');
         }
-
-        // Import chat
-        function importChat() {
-            document.getElementById('importFile').click();
-        }
-
-        // Handle import file
-        function handleImport(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
+        function importChat() { document.getElementById('importFile').click(); }
+        function handleImport(e) {
+            const f = e.target.files[0]; if (!f) return;
+            const r = new FileReader(); r.onload = (ev) => {
                 try {
-                    const data = JSON.parse(e.target.result);
-                    if (data.messages && Array.isArray(data.messages)) {
-                        chat.innerHTML = '';
-                        messageHistory = [];
-                        data.messages.forEach(msg => {
-                            addMessage(msg.sender, msg.text, msg.isError, true);
-                        });
-                        localStorage.setItem('andromate_history', JSON.stringify(messageHistory));
-                        showToast('Chat imported!', 'success');
-                    } else {
-                        showToast('Invalid chat file', 'error');
-                    }
-                } catch (err) {
-                    showToast('Failed to import chat', 'error');
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
+                    const d = JSON.parse(ev.target.result);
+                    if (d.messages?.length) { chat.innerHTML = ''; messageHistory = []; d.messages.forEach(m => addMessage(m.sender, m.text, m.isError, true)); showToast('Imported!', 'success'); }
+                    else showToast('Invalid file', 'error');
+                } catch { showToast('Import failed', 'error'); }
+            }; r.readAsText(f); e.target.value = '';
         }
-
-        // Send command
         async function sendCommand() {
-            const cmd = commandInput.value.trim();
-            if (!cmd) return;
-
-            addMessage('user', cmd);
-            commandInput.value = '';
-            commandInput.disabled = true;
-            sendBtn.disabled = true;
-            showTyping();
-
+            const cmd = commandInput.value.trim(); if (!cmd) return;
+            addMessage('user', cmd); commandInput.value = ''; commandInput.disabled = true; sendBtn.disabled = true; showTyping();
             try {
-                const response = await fetch('/api/command', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command: cmd })
-                });
-                const data = await response.json();
-
-                hideTyping();
-
-                if (data.error) {
-                    addMessage('assistant', `Error: ${data.error}`, true);
-                } else if (data.image) {
-                    addImageMessage(data.image);
-                } else {
-                    const output = data.output.trim();
-                    if (output) {
-                        addMessage('assistant', output);
-                    } else {
-                        addMessage('assistant', 'Done.');
-                    }
-                }
-            } catch (e) {
-                hideTyping();
-                addMessage('assistant', `Network error: ${e.message}`, true);
-            } finally {
-                commandInput.disabled = false;
-                sendBtn.disabled = false;
-                commandInput.focus();
-            }
+                const r = await fetch('/api/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: cmd }) });
+                const d = await r.json(); hideTyping();
+                if (d.error) addMessage('assistant', `Error: ${d.error}`, true);
+                else if (d.image) addImageMessage(d.image);
+                else addMessage('assistant', d.output?.trim() || 'Done.');
+            } catch (e) { hideTyping(); addMessage('assistant', `Network error: ${e.message}`, true); }
+            finally { commandInput.disabled = false; sendBtn.disabled = false; commandInput.focus(); }
         }
-
-        // Update status
         async function updateStatus() {
             try {
-                const response = await fetch('/api/status');
-                const data = await response.json();
+                const r = await fetch('/api/status'), d = await r.json();
+                batterySpan.innerHTML = (d.battery !== undefined && d.battery !== 'unknown') ? `${d.battery}%` : '<small>&mdash;</small>';
+                wifiSpan.innerText = (d.wifi && d.wifi !== 'unknown') ? d.wifi : 'Not connected';
+            } catch { batterySpan.innerHTML = '<small>&mdash;</small>'; wifiSpan.innerText = '\u2014'; }
+        }
+        sendBtn.addEventListener('click', sendCommand);
+        commandInput.addEventListener('keypress', e => { if (e.key === 'Enter' && enterKeyEnabled) sendCommand(); });
+        updateStatus(); setInterval(updateStatus, 30000);
 
-                if (data.battery !== undefined && data.battery !== 'unknown') {
-                    batterySpan.innerHTML = `${data.battery}%`;
-                } else {
-                    batterySpan.innerHTML = '<small>—</small>';
-                }
-
-                if (data.wifi && data.wifi !== 'unknown' && data.wifi !== 'error') {
-                    wifiSpan.innerText = data.wifi;
-                } else {
-                    wifiSpan.innerText = 'Not connected';
-                }
-            } catch (e) {
-                batterySpan.innerHTML = '<small>—</small>';
-                wifiSpan.innerText = '—';
+        // ── Providers ──────────────────────────────────────────
+        async function loadProviders() {
+            try {
+                const r = await fetch('/api/providers'), d = await r.json();
+                renderProviders(d.providers, d.active);
+                updateSidebarProvider(d.providers, d.active);
+            } catch (e) { console.error('Failed to load providers:', e); }
+        }
+        async function loadPresets() {
+            try {
+                const r = await fetch('/api/providers/presets'), d = await r.json();
+                presets = d.presets; presetModels = d.models;
+            } catch (e) { console.error('Failed to load presets:', e); }
+        }
+        function updateSidebarProvider(providers, active) {
+            const ap = providers.find(p => p.name === active);
+            document.getElementById('apName').textContent = ap ? ap.name : 'None';
+            document.getElementById('apModel').textContent = ap ? ap.model : 'Not configured';
+        }
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+        function renderProviders(providers, active) {
+            const grid = document.getElementById('providerGrid');
+            if (!providers.length) {
+                grid.innerHTML = '<div class="provider-empty"><i class="fas fa-server"></i><p>No providers configured</p></div>';
+                return;
             }
+            grid.innerHTML = providers.map(p => {
+                const isActive = p.name === active;
+                const keyLabel = p.has_key ? p.api_key_masked : 'No key set';
+                return `<div class="provider-card ${isActive ? 'active' : ''}">
+                    <div class="provider-card-top">
+                        <div class="provider-card-name">
+                            ${esc(p.name)}
+                            ${isActive ? '<span class="badge-active">active</span>' : ''}
+                        </div>
+                        <div class="provider-card-actions">
+                            <button class="icon-btn${isActive ? ' success' : ''}" title="Set active" onclick="setActive('${esc(p.name)}')"><i class="fas fa-check"></i></button>
+                            <button class="icon-btn" title="Edit" onclick="openEditModal('${esc(p.name)}')"><i class="fas fa-pen"></i></button>
+                            <button class="icon-btn" title="Test" onclick="testProvider('${esc(p.name)}', this)"><i class="fas fa-plug"></i></button>
+                            <button class="icon-btn danger" title="Remove" onclick="removeProvider('${esc(p.name)}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="provider-card-details">
+                        <div class="provider-detail-row">
+                            <span class="label">Model</span>
+                            <span class="value">${esc(p.model)}</span>
+                        </div>
+                        <div class="provider-detail-row">
+                            <span class="label">Endpoint</span>
+                            <span class="value">${esc(p.base_url || 'N/A')}</span>
+                        </div>
+                        <div class="provider-detail-row">
+                            <span class="label">Key</span>
+                            <span class="value">${esc(keyLabel)}</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        async function setActive(name) {
+            await fetch('/api/providers/active', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name}) });
+            showToast(`${name} is now active`, 'success'); loadProviders();
+        }
+        async function removeProvider(name) {
+            if (!confirm(`Remove ${name}?`)) return;
+            await fetch('/api/providers/remove', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name}) });
+            showToast(`Removed ${name}`, 'info'); loadProviders();
+        }
+        async function testProvider(name, btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                const r = await fetch('/api/providers/test', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name}) });
+                const d = await r.json();
+                btn.innerHTML = d.success ? '<i class="fas fa-check" style="color:var(--success)"></i>' : '<i class="fas fa-times" style="color:var(--error)"></i>';
+                showToast(d.success ? `${name}: OK` : `${name}: Failed`, d.success ? 'success' : 'error');
+            } catch { btn.innerHTML = '<i class="fas fa-times" style="color:var(--error)"></i>'; }
+            setTimeout(() => btn.innerHTML = '<i class="fas fa-plug"></i>', 3000);
         }
 
-        sendBtn.addEventListener('click', sendCommand);
-        commandInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && enterKeyEnabled) sendCommand();
-        });
-
-        updateStatus();
-        setInterval(updateStatus, 30000);
+        // ── Modal ──────────────────────────────────────────────
+        function openAddModal() {
+            editingProvider = null;
+            document.getElementById('modalTitle').textContent = 'Add Provider';
+            document.getElementById('modalName').value = ''; document.getElementById('modalName').disabled = false;
+            document.getElementById('modalUrl').value = '';
+            document.getElementById('modalModel').value = '';
+            document.getElementById('modalKey').value = '';
+            document.getElementById('modalError').textContent = '';
+            renderPresetChips();
+            document.getElementById('providerModal').style.display = 'flex';
+        }
+        function openEditModal(name) {
+            editingProvider = name;
+            document.getElementById('modalTitle').textContent = `Edit ${name}`;
+            document.getElementById('modalName').value = name; document.getElementById('modalName').disabled = true;
+            document.getElementById('modalError').textContent = '';
+            fetch(`/api/providers/${encodeURIComponent(name)}`).then(r => r.json()).then(p => {
+                document.getElementById('modalUrl').value = p.base_url || '';
+                document.getElementById('modalModel').value = p.model || '';
+            });
+            document.getElementById('modalKey').value = '';
+            document.getElementById('presetChips').innerHTML = '';
+            const models = presetModels[name] || [];
+            const sel = document.getElementById('modalModelSelect');
+            if (models.length) {
+                sel.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+                sel.style.display = 'block'; sel.onchange = () => { document.getElementById('modalModel').value = sel.value; };
+            } else { sel.style.display = 'none'; }
+            document.getElementById('providerModal').style.display = 'flex';
+        }
+        function closeModal() { document.getElementById('providerModal').style.display = 'none'; }
+        function renderPresetChips() {
+            const el = document.getElementById('presetChips');
+            el.innerHTML = presets.map(p => `<button class="chip" onclick="selectPreset('${p.name}')">${p.name}</button>`).join('');
+            document.getElementById('modalModelSelect').style.display = 'none';
+        }
+        function selectPreset(name) {
+            const p = presets.find(x => x.name === name);
+            if (!p) return;
+            document.getElementById('modalName').value = p.name;
+            document.getElementById('modalUrl').value = p.base_url;
+            document.getElementById('modalModel').value = p.model;
+            document.querySelectorAll('.chip').forEach(c => c.classList.toggle('selected', c.textContent === name));
+            const models = presetModels[name] || [];
+            const sel = document.getElementById('modalModelSelect');
+            if (models.length) {
+                sel.innerHTML = models.map(m => `<option value="${m}" ${m === p.model ? 'selected' : ''}>${m}</option>`).join('');
+                sel.style.display = 'block'; sel.onchange = () => { document.getElementById('modalModel').value = sel.value; };
+            } else { sel.style.display = 'none'; }
+        }
+        async function saveProvider() {
+            const name = document.getElementById('modalName').value.trim();
+            const url = document.getElementById('modalUrl').value.trim();
+            const model = document.getElementById('modalModel').value.trim();
+            const key = document.getElementById('modalKey').value;
+            const errEl = document.getElementById('modalError');
+            if (!name || !url || !model) { errEl.textContent = 'Name, URL, and Model are required'; return; }
+            errEl.textContent = '';
+            try {
+                if (editingProvider) {
+                    const body = { name };
+                    if (key) body.api_key = key;
+                    if (model) body.model = model;
+                    if (url) body.base_url = url;
+                    const r = await fetch('/api/providers/edit', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                    const d = await r.json();
+                    if (d.error) { errEl.textContent = d.error; return; }
+                    showToast(`Updated ${name}`, 'success');
+                } else {
+                    const r = await fetch('/api/providers/add', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, api_key: key, base_url: url, model }) });
+                    const d = await r.json();
+                    if (d.error) { errEl.textContent = d.error; return; }
+                    showToast(`Added ${name}`, 'success');
+                }
+                closeModal(); loadProviders();
+            } catch (e) { errEl.textContent = 'Request failed'; }
+        }
     </script>
 </body>
 </html>

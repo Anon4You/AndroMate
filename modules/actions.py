@@ -13,7 +13,6 @@ from contacts import match_contact, get_contacts
 from config import APP_NAME_TO_PACKAGE, USER_CONFIG_PATH
 import config
 from utils import speak
-from providers import get_available_providers
 
 # -------------------------------------------------------------------
 # Helpers
@@ -223,17 +222,6 @@ def open_app(app_name):
         print(f"Exception launching app: {e}")
         speak(f"Sorry, I couldn't open {app_name}")
         send_notification("App Launch Error", str(e))
-
-def reply_notification(app_name, reply_text):
-    subprocess.run([
-        "termux-notification",
-        "--id", "ai_reply",
-        "--title", f"Auto-reply to {app_name}",
-        "--content", reply_text,
-        "--action", f"termux-clipboard-set '{reply_text}'"
-    ])
-    print(f"Prepared reply for {app_name}: {reply_text}")
-    speak(f"Reply prepared for {app_name}")
 
 def run_shell(command):
     """Execute a shell command in Termux and print output cleanly."""
@@ -819,44 +807,6 @@ def reply(response):
     speak(response)
 
 # -------------------------------------------------------------------
-# Provider management actions
-# -------------------------------------------------------------------
-def list_providers():
-    providers = get_available_providers()
-    msg = "Available AI providers: " + ", ".join(providers)
-    print(msg)
-    speak(msg)
-
-def set_provider(provider_name):
-    providers = get_available_providers()
-    if provider_name not in providers:
-        msg = f"Provider '{provider_name}' not found. Available: {', '.join(providers)}"
-        print(msg)
-        speak(msg)
-        return
-    config_data = {}
-    if os.path.exists(USER_CONFIG_PATH):
-        try:
-            with open(USER_CONFIG_PATH, "r") as f:
-                config_data = json.load(f)
-        except Exception:
-            pass
-    config_data["AI_PROVIDER"] = provider_name
-    os.makedirs(os.path.dirname(USER_CONFIG_PATH), exist_ok=True)
-    with open(USER_CONFIG_PATH, "w") as f:
-        json.dump(config_data, f, indent=2)
-    
-    config.reload_config()
-    msg = f"AI provider changed to {provider_name}. It will be used from now on."
-    print(msg)
-    speak(msg)
-
-def get_current_provider():
-    msg = f"Currently using {config.AI_PROVIDER} as the AI provider."
-    print(msg)
-    speak(msg)
-
-# -------------------------------------------------------------------
 # Voice output control
 # -------------------------------------------------------------------
 # Set this to True only for voice/wake_word contexts
@@ -892,8 +842,6 @@ def execute_action(decision, context=None):
         send_telegram(decision.get('recipient'), decision.get('message'))
     elif action == 'open_app':
         open_app(decision.get('app'))
-    elif action == 'reply_notification':
-        reply_notification(decision.get('app', 'unknown'), decision.get('message', ''))
     elif action == 'run_shell':
         run_shell(decision.get('command'))
     elif action == 'get_battery':
@@ -960,14 +908,6 @@ def execute_action(decision, context=None):
         return generate_image(decision.get('prompt'))
     elif action == 'reply':
         reply(decision.get('response'))
-    elif action == 'list_providers':
-        list_providers()
-    elif action == 'set_provider':
-        set_provider(decision.get('provider'))
-    elif action == 'get_current_provider':
-        get_current_provider()
-    elif action == 'clipboard_action':
-        pass  # handled in clipboard module
     else:
         print("No action taken.")
         speak("I didn't understand the action.")

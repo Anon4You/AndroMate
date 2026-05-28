@@ -1,134 +1,120 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-# AndroMate Installation Script
-# This script installs all required dependencies for AndroMate
+# AndroMate v2.0 Installation Script
 
 set -e
 
 echo "╔════════════════════════════════════════════════════╗"
-echo "║         AndroMate - Installation Script            ║"
+echo "║         AndroMate v2.0 — Install Script           ║"
 echo "╚════════════════════════════════════════════════════╝"
 echo ""
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Function to print status
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+print_status()  { echo -e "${BLUE}[INFO]${NC} $1"; }
+print_success() { echo -e "${GREEN}[OK]${NC} $1"; }
+print_warning() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+print_error()   { echo -e "${RED}[ERROR]${NC} $1"; }
 
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Check if running in Termux
+# Check Termux
 if [ ! -d "/data/data/com.termux" ]; then
     print_error "This script must be run in Termux on Android."
     exit 1
 fi
 
-# Check for curl (required for termuxvoid bootstrap)
-if ! command -v curl &> /dev/null; then
-    print_error "curl is not installed. Please install it first: pkg install curl"
-    exit 1
-fi
-
-# Check if Termux Void repository is already set up
-VOID_KEY_FILE="$PREFIX/etc/apt/sources.list.d/termuxvoid.list"
-if [ ! -f "$VOID_KEY_FILE" ] && ! apt list --installed 2>/dev/null | grep -q tgpt; then
-    print_warning "Termux Void repository not detected. Setting it up now..."
-    bash <(curl -fsL https://termuxvoid.github.io/repo/install.sh) -s
-    print_success "Termux Void repository installed."
-else
-    print_status "Termux Void repository already present."
-fi
-
-# Update package lists
+# Update packages
 print_status "Updating package lists..."
 apt update -y
 
-# Install system packages (now available from Void repo)
+# Install system packages
 print_status "Installing system packages..."
-apt install -y python tmux termux-api flac portaudio wacli
+apt install -y python termux-api
 
-# Install tgpt (AI tool - used for image generation)
-print_status "Installing tgpt..."
-apt install -y tgpt
+# Optional packages
+for pkg in wacli tmux; do
+    if ! command -v "$pkg" &> /dev/null; then
+        print_status "Installing $pkg..."
+        apt install -y "$pkg" 2>/dev/null || print_warning "Could not install $pkg (optional)"
+    else
+        print_success "$pkg already installed"
+    fi
+done
 
-# Check if pip is available
+# Check pip
 if ! command -v pip &> /dev/null; then
-    print_error "pip not found. Please ensure Python is properly installed."
+    print_error "pip not found. Ensure Python is properly installed."
     exit 1
 fi
 
 # Install Python packages
 print_status "Installing Python packages..."
-pip install requests SpeechRecognition colorama flask telebot pyaudio
+pip install requests rich prompt_toolkit pyfiglet telebot
 
-# Create necessary directories
-print_status "Creating configuration directories..."
+# Create config directory
 mkdir -p ~/.andromate
 
-# Always write the latest config
-print_status "Writing configuration..."
-cat > ~/.andromate/config.json << 'EOF'
+# Write default config (only if it doesn't exist)
+if [ ! -f ~/.andromate/config.json ]; then
+    print_status "Writing default configuration..."
+    cat > ~/.andromate/config.json << 'EOF'
 {
-    "AI_PROVIDER": "opengateway",
-    "OPENGATEWAY_API_KEY": "your-api-key-here",
-    "OPENGATEWAY_BASE": "https://opengateway.gitlawb.com/v1",
-    "OPENGATEWAY_MODEL": "mimo-v2.5-pro",
-    "EMAIL_SENDER": "",
-    "EMAIL_APP_PASSWORD": "",
-    "TELEGRAM_BOT_TOKEN": "",
-    "TELEGRAM_AUTHORIZED_CHAT_ID": null,
-    "ENABLE_VOICE": true,
-    "ENABLE_NOTIFICATIONS": false,
-    "ENABLE_CLIPBOARD": false,
-    "POLL_INTERVAL": 2,
-    "WAKE_WORD_ENABLED": false
+    "active_provider": "openrouter",
+    "providers": [
+        {
+            "name": "opengateway",
+            "api_key": "",
+            "base_url": "https://opengateway.gitlawb.com/v1",
+            "model": "mimo-v2.5-pro"
+        },
+        {
+            "name": "openrouter",
+            "api_key": "",
+            "base_url": "https://openrouter.ai/api/v1",
+            "model": "openai/gpt-oss-20b:free"
+        },
+        {
+            "name": "ollama",
+            "api_key": "ollama",
+            "base_url": "http://localhost:11434/v1",
+            "model": "llama3"
+        }
+    ],
+    "enable_voice": true,
+    "email_sender": "",
+    "email_app_password": "",
+    "telegram_bot_token": "",
+    "telegram_authorized_chat_id": null
 }
 EOF
-print_success "Configuration written to ~/.andromate/config.json"
+    print_success "Config written to ~/.andromate/config.json"
+else
+    print_status "Config already exists, skipping."
+fi
 
-# Make scripts executable
-print_status "Making scripts executable..."
-chmod +x *.py 2>/dev/null || true
-
-# Final message
+# Done
 echo ""
 echo "╔════════════════════════════════════════════════════╗"
 echo "║          Installation Complete!                    ║"
 echo "╚════════════════════════════════════════════════════╝"
 echo ""
-print_success "AndroMate has been installed successfully!"
+echo -e "${GREEN}Next steps:${NC}"
 echo ""
-echo -e "${YELLOW}Next steps:${NC}"
-echo "1. Get your free API key: https://gitlawb.com/opengateway/keys"
-echo "   Edit ~/.andromate/config.json and set OPENGATEWAY_API_KEY"
-echo "2. Grant necessary permissions:"
-echo "   - termux-microphone-record (for voice commands)"
-echo "   - termux-sms-list (for SMS features)"
-echo "   - termux-call-log (for call logs)"
-echo "   - termux-location (for location services)"
-echo "3. Run the assistant:"
-echo "   - python andromate.py          (main assistant)"
-echo "   - python andromate.py voice    (voice command mode)"
-echo "   - python andromate.py cli      (interactive CLI)"
-echo "   - python andromate.py web      (web interface)"
-echo "   - python andromate.py wake     (wake word detection)"
+echo "  1. Run AndroMate:"
+echo "     python andromate.py            TUI (default)"
+echo "     python andromate.py voice      Voice mode"
+echo "     python andromate.py telegram   Telegram bot"
 echo ""
-print_status "For help, check README.md or CONTRIBUTING.md"
+echo "  2. Add an AI provider:"
+echo "     /provider                      Arrow-key provider manager"
+echo ""
+echo "  3. Grant Termux permissions (run once):"
+echo "     termux-microphone-record       Voice commands"
+echo "     termux-sms-list                SMS features"
+echo "     termux-call-log                Call logs"
+echo ""
+echo -e "  Docs: ${BLUE}README.md${NC} | ${BLUE}CONTRIBUTING.md${NC}"
 echo ""
