@@ -4,8 +4,8 @@
   <h1 align="center">AndroMate</h1>
   
   <p align="center">
-    <strong>A powerful, modular AI assistant for Termux on Android.</strong><br>
-    <sub>Control your device with natural language, voice commands, Telegram, or the interactive TUI.</sub>
+    <strong>Your AI-powered Android assistant — chat, call, text, control.</strong><br>
+    <sub>Natural language, voice commands, Telegram, web dashboard, or the interactive CLI.</sub>
   </p>
 
   <p align="center">
@@ -29,12 +29,26 @@
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
+- [CLI Commands](#cli-commands)
 - [Provider Management](#provider-management)
 - [Telegram Bot](#telegram-bot)
+- [Web Dashboard](#web-dashboard)
 - [Configuration](#configuration)
 - [Project Structure](#project-structure)
 - [Contributing](CONTRIBUTING.md)
 - [License](#license)
+
+---
+
+## Screenshots
+
+| CLI | Telegram Bot |
+|:---:|:---:|
+| ![CLI](img/cli_screenshot.jpg) | ![Telegram](img/telegram_screeshot.jpg) |
+
+| Web Dashboard | Web Providers |
+|:---:|:---:|
+| ![Web Chat](img/web_ss1.jpg) | ![Web Providers](img/web_ss2.jpg) |
 
 ---
 
@@ -43,7 +57,10 @@
 ### Core
 - **Multi-Provider AI** — Use any OpenAI-compatible API: OpenAI, OpenRouter, Ollama, LM Studio, vLLM, Groq, Together, and more
 - **Unified `/provider` command** — Arrow-key menus with type-to-filter for managing providers (add/edit/remove/switch/test)
-- **Rich TUI** — Claude Code-style terminal interface with syntax highlighting, markdown rendering, and prompt bars
+- **`/telegram` command** — Manage bot token and chat ID from the CLI
+- **`/email` command** — Configure email sender and app password from the CLI
+- **Rich CLI** — Claude Code-style terminal interface with syntax highlighting, markdown rendering, and prompt bars
+- **Web Dashboard** — Modern browser-based chat and provider management UI
 - **Native Voice Recognition** — Hands-free control via `termux-speech-to-text`
 - **Spoken Feedback** — Uses `termux-tts-speak` for audible confirmations
 
@@ -54,10 +71,11 @@
 - **Contacts** — List and search contacts with fuzzy matching
 - **System** — Execute shell commands, control brightness, volume, battery
 - **Camera** — Take selfies and photos
-- **Connectivity** — Toggle WiFi, Bluetooth
+- **Connectivity** — Toggle WiFi, scan networks, get connection info
 
 ### Remote Control
-- **Telegram Bot** — Control your device from anywhere via Telegram
+- **Telegram Bot** — Full device control from anywhere — natural language chat works without `/ai`
+- **Web Dashboard** — Browser-based chat and provider management, mobile-friendly
 
 ---
 
@@ -69,11 +87,15 @@
 | :--- | :--- | :--- |
 | **Termux:API App** | Hardware access bridge | [F-Droid](https://f-droid.org/packages/com.termux.api/) |
 | `termux-api` | API interface package | `pkg install termux-api` |
+| `tmux` | Terminal multiplexer for background tasks | `pkg install tmux` |
 | `wacli` | WhatsApp CLI tool | `pkg install wacli` |
+| `tgpt` | AI image generation | `pkg install tgpt` |
+| `flac` | Audio codec for speech recognition | `pkg install flac` |
+| `portaudio` | Audio I/O library | `pkg install portaudio` |
 
 ### Python Libraries
 ```bash
-pip install requests rich prompt_toolkit pyfiglet telebot
+pip install requests rich prompt_toolkit pyfiglet telebot SpeechRecognition colorama flask pyaudio
 ```
 
 > [!WARNING]
@@ -111,9 +133,10 @@ pip install requests rich prompt_toolkit pyfiglet telebot
 
 5. **Run**
    ```bash
-   python andromate.py         # TUI (default)
-   python andromate.py voice   # Voice mode
+   python andromate.py          # CLI (default)
+   python andromate.py voice    # Voice mode
    python andromate.py telegram # Telegram bot
+   python andromate.py web      # Web dashboard
    ```
 
 ---
@@ -122,19 +145,22 @@ pip install requests rich prompt_toolkit pyfiglet telebot
 
 | Mode | Command | Description |
 | :--- | :--- | :--- |
-| **TUI** | `python andromate.py` | Interactive terminal chat (default) |
+| **CLI** | `python andromate.py` | Interactive terminal chat (default) |
 | **Voice** | `python andromate.py voice` | Hands-free voice commands |
 | **Telegram** | `python andromate.py telegram` | Remote control via Telegram bot |
+| **Web** | `python andromate.py web` | Browser-based dashboard |
 
-### Slash Commands
+---
+
+## CLI Commands
 
 | Command | Description |
 | :--- | :--- |
 | `/provider` | Manage AI providers (list/add/edit/remove/switch/test) |
+| `/telegram` | Configure Telegram bot (view/set token/chat ID/clear) |
+| `/email` | Configure email SMTP (view/set sender/password/clear) |
 | `/settings` | Show current settings |
 | `/set-voice` | Toggle voice output on/off |
-| `/set-email` | Configure email SMTP |
-| `/set-telegram` | Configure Telegram bot |
 | `/status` | Show system status |
 | `/clear` | Clear conversation history |
 | `/help` | Show available commands |
@@ -170,27 +196,52 @@ All selectors support **type-to-filter** — just start typing to narrow down th
 | Provider | Default Model |
 | :--- | :--- |
 | OpenRouter | `openai/gpt-oss-20b:free` |
-| OpenAI | `gpt-4o-mini` |
+| OpenGateway | `mimo-v2.5-pro` |
+| OpenAI | `gpt-4o` |
 | Ollama | `llama3` |
-| LM Studio | `default` |
+| LM Studio | `local-model` |
 | vLLM | `default` |
-| Groq | `llama-3.1-8b-instant` |
-| Together | `meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo` |
+| Groq | `llama3-70b-8192` |
+| Together | `meta-llama/Llama-3-70b-chat-hf` |
 | Custom | *(your choice)* |
 
 ---
 
 ## Telegram Bot
 
-Control AndroMate remotely via Telegram:
+Control AndroMate remotely via Telegram. Just send any message — no `/ai` prefix needed.
 
 1. Create a bot with [@BotFather](https://t.me/botfather)
 2. Get your chat ID (message [@userinfobot](https://t.me/userinfobot))
-3. Configure in the TUI:
+3. Configure in the CLI:
    ```
-   /set-telegram
+   /telegram
    ```
 4. Run: `python andromate.py telegram`
+
+### Bot Commands
+
+| Command | Description |
+| :--- | :--- |
+| `/start`, `/help` | Show help |
+| `/provider` | Manage AI providers (inline keyboard) |
+| `/battery` | Battery status |
+| `/location` | Get GPS location |
+| `/wifi` | WiFi connection info |
+| `/scanwifi` | Scan nearby networks |
+| `/torch on\|off` | Toggle flashlight |
+| `/brightness 0-255` | Set screen brightness |
+| `/volume 0-100` | Set media volume |
+| `/photo [front\|back]` | Take a photo |
+| `/open <app>` | Open an app |
+| `/toast <msg>` | Show a toast notification |
+| `/shell <cmd>` | Run a shell command |
+| `/contacts` | List contacts |
+| `/calls` | Call log |
+| `/sms` | SMS inbox |
+| `/device` | Device info |
+
+Just type any natural language message to chat with AI — it handles both conversation and device actions automatically.
 
 > [!TIP]
 > Keep the bot running in the background with `tmux`:
@@ -200,6 +251,26 @@ Control AndroMate remotely via Telegram:
 > # Detach: Ctrl+B, then D
 > # Reattach: tmux attach -t andromate
 > ```
+
+---
+
+## Web Dashboard
+
+A modern browser-based interface for chat and provider management.
+
+```bash
+python andromate.py web
+# Opens on http://localhost:5000
+```
+
+### Features
+- **Chat tab** — Full conversation with markdown rendering, code blocks, image display
+- **Providers tab** — Card grid showing all providers with model, endpoint, key status
+- **Provider management** — Add/edit/remove/test/switch active providers
+- **Mobile responsive** — Bottom navigation bar, stacked cards on small screens
+- **Settings** — Auto-scroll, save history, enter-to-send toggles
+- **Theme** — Dark/light mode toggle
+- **Import/Export** — Save and restore chat history
 
 ---
 
@@ -221,6 +292,7 @@ Config is stored at `~/.andromate/config.json` (auto-generated on first run).
 
 ### Email Setup
 
+Use the CLI command `/email` or edit config directly:
 ```json
 {
   "email_sender": "your.email@gmail.com",
@@ -237,18 +309,24 @@ Config is stored at `~/.andromate/config.json` (auto-generated on first run).
 
 ```
 AndroMate/
-├── andromate.py          # Main entry point
+├── andromate.py              # Main entry point
+├── install.sh                # Installer script
 └── modules/
     ├── __init__.py
-    ├── actions.py        # Device actions (SMS, Call, Email, Camera, Shell)
-    ├── ai.py             # AI decision routing
-    ├── cli.py            # Rich TUI interface with slash commands
-    ├── config.py         # Multi-provider configuration management
-    ├── memory.py         # Conversation history (per-provider)
-    ├── prompt_manager.py # Dynamic AI prompt generation
-    ├── providers.py      # Provider wrappers (OpenAI-compatible)
-    ├── telegram_bot.py   # Telegram bot interface
-    └── utils.py          # Helpers (TTS, fuzzy matching, contacts)
+    ├── actions.py            # Device actions (SMS, Call, Email, Camera, Shell)
+    ├── ai.py                 # AI decision routing
+    ├── cli.py                # Rich CLI with slash commands
+    ├── config.py             # Multi-provider configuration management
+    ├── memory.py             # Conversation history
+    ├── prompt_manager.py     # Dynamic AI prompt generation
+    ├── providers.py          # Provider wrappers (OpenAI-compatible)
+    ├── telegram_bot.py       # Telegram bot interface
+    ├── web_dashboard.py      # Flask web dashboard server
+    ├── utils.py              # Helpers (TTS, contacts)
+    ├── static/
+    │   └── style.css         # Dashboard styles
+    └── templates/
+        └── dashboard.html    # Dashboard template
 ```
 
 ---

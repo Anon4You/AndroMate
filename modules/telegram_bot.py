@@ -811,25 +811,7 @@ def cmd_ai_chat(message):
         if len(parts) < 2:
             bot.reply_to(message, "Usage: /ai <message>")
             return
-        decision = ask_ai(parts[1], context="telegram")
-        old_stdout = sys.stdout
-        new_stdout = io.StringIO()
-        sys.stdout = new_stdout
-        result = execute_action(decision, context="telegram")
-        sys.stdout = old_stdout
-        output = new_stdout.getvalue().strip()
-
-        if result and os.path.exists(result):
-            with open(result, 'rb') as photo:
-                bot.send_photo(message.chat.id, photo)
-            try:
-                os.remove(result)
-            except OSError:
-                pass
-        elif output:
-            bot.reply_to(message, f"```\n{output}\n```", parse_mode="MarkdownV2")
-        else:
-            bot.reply_to(message, "Done")
+        _process_ai_message(message, parts[1])
     except Exception as e:
         bot.reply_to(message, f"Error: {e}")
 
@@ -840,14 +822,37 @@ def handle_message(message):
     if not is_authorized(message):
         bot.reply_to(message, "Unauthorized.")
         return
+    try:
+        _process_ai_message(message, message.text)
+    except Exception as e:
+        logger.exception("Error in message handler")
+        bot.reply_to(message, f"Error: {e}")
 
-    user_input = message.text
+def _process_ai_message(message, user_input):
+    """Process a message through AI — handles both chat replies and actions."""
     logger.info(f"Received: {user_input}")
 
-    bot.reply_to(message, "Thinking...")
+    thinking_msg = bot.reply_to(message, "Thinking…")
 
     decision = ask_ai(user_input, context="telegram")
+    action = decision.get("action", "none")
 
+    # Direct chat reply — send text, no action execution
+    if action == "reply":
+        response = decision.get("response", "")
+        if response:
+            try:
+                bot.edit_message_text(response, message.chat.id, thinking_msg.message_id)
+            except Exception:
+                bot.reply_to(message, response)
+        else:
+            try:
+                bot.edit_message_text("Done.", message.chat.id, thinking_msg.message_id)
+            except Exception:
+                bot.reply_to(message, "Done.")
+        return
+
+    # Action — execute and capture output
     old_stdout = sys.stdout
     new_stdout = io.StringIO()
     sys.stdout = new_stdout
@@ -857,23 +862,34 @@ def handle_message(message):
         result = execute_action(decision, context="telegram")
     except Exception as e:
         logger.exception("Error executing action")
-        bot.reply_to(message, f"Error: {e}")
+        sys.stdout = old_stdout
+        bot.edit_message_text(f"Error: {e}", message.chat.id, thinking_msg.message_id)
+        return
     finally:
         sys.stdout = old_stdout
 
-    output = new_stdout.getvalue()
+    output = new_stdout.getvalue().strip()
 
+    # Send photo if action returned a file path
     if result and os.path.exists(result):
+        bot.delete_message(message.chat.id, thinking_msg.message_id)
         with open(result, 'rb') as photo:
             bot.send_photo(message.chat.id, photo)
         try:
             os.remove(result)
         except OSError:
             pass
-    elif output.strip():
-        bot.reply_to(message, f"```\n{output.strip()}\n```", parse_mode="MarkdownV2")
+    elif output:
+        try:
+            bot.edit_message_text(output, message.chat.id, thinking_msg.message_id)
+        except Exception:
+            bot.reply_to(message, output)
     else:
-        bot.reply_to(message, "Done.")
+        try:
+            bot.edit_message_text("Done.", message.chat.id, thinking_msg.message_id)
+        except Exception:
+            bot.reply_to(message, "Done.")
+
 
 def run_bot():
     """Start the bot (blocking)."""
