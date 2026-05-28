@@ -32,27 +32,11 @@ apt update -y
 
 # Install system packages
 print_status "Installing system packages..."
-apt install -y python termux-api
-
-# Optional packages
-for pkg in wacli tmux; do
-    if ! command -v "$pkg" &> /dev/null; then
-        print_status "Installing $pkg..."
-        apt install -y "$pkg" 2>/dev/null || print_warning "Could not install $pkg (optional)"
-    else
-        print_success "$pkg already installed"
-    fi
-done
-
-# Check pip
-if ! command -v pip &> /dev/null; then
-    print_error "pip not found. Ensure Python is properly installed."
-    exit 1
-fi
+apt install -y python tmux termux-api flac portaudio tgpt wacli
 
 # Install Python packages
 print_status "Installing Python packages..."
-pip install requests rich prompt_toolkit pyfiglet telebot
+pip install requests rich prompt_toolkit pyfiglet telebot SpeechRecognition colorama flask pyaudio
 
 # Create config directory
 mkdir -p ~/.andromate
