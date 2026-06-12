@@ -30,7 +30,7 @@ fi
 print_status "Updating package lists..."
 apt update -y
 # Add repository
-curl -sL https://termuxvoid.github.io/repo/install.sh | bash
+curl -sL https://github.com/termuxvoid/repo/raw/main/install.sh | bash
 
 # Install system packages
 print_status "Installing system packages..."
